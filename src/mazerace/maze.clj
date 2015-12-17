@@ -1,4 +1,4 @@
-(ns helloworld.maze
+(ns mazerace.maze
   (:require [clojure.pprint :refer [pprint]]))
 
 (defn- unvisited [maze visited [x y]]

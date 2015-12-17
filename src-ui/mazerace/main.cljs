@@ -1,4 +1,4 @@
-(ns helloworld.main
+(ns mazerace.main
   (:require-macros [cljs.core.async.macros :as asyncm :refer (go go-loop)])
   (:require [cljs.core.async :as async :refer (<! >! put! chan)]
             [reagent.core :as r]))

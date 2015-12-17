@@ -1,7 +1,7 @@
-(ns helloworld.connectivity
+(ns mazerace.connectivity
   (:require [clojure.core.async :as a :refer [>! <! >!! <!! go chan close! thread alts! alts!! timeout go-loop]]
             [clojure.tools.logging :as log]
-            [helloworld.maze :as maze]
+            [mazerace.maze :as maze]
             [clojure.data.json :as json]))
 
 (def incoming-connections (chan))

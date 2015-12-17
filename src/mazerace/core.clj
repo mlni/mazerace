@@ -1,4 +1,4 @@
-(ns helloworld.core
+(ns mazerace.core
   (:use org.httpkit.server
         (compojure [core :only [defroutes GET POST]]
                    [route :only [files not-found resources]]
@@ -6,8 +6,8 @@
   (:require [ring.middleware.reload :as reload]
             [ring.util.response :as resp]
             [clojure.data.json :as json]
-            [helloworld.connectivity :as conn]
-            [helloworld.maze :as maze]
+            [mazerace.connectivity :as conn]
+            [mazerace.maze :as maze]
             [clojure.core.async :refer [close! <! >!! chan go-loop]]
             [clojure.tools.logging :as log])
   (:gen-class))
