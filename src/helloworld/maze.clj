@@ -29,7 +29,7 @@
                          (into [] (for [x (range width)]
                                     {:u true :d true :l true :r true}))))
         visited (hash-set)
-        start [0 0]
+        start [(quot width 2) (dec height)]
         path (list start)]
     (loop [path path visited visited walls walls]
       (if (empty? path)

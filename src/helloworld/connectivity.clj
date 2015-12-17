@@ -26,14 +26,22 @@
 (defn handle-pair [[recv-a send-a] [recv-b send-b]]
   (log/info "Got pair, launching handler")
   (go
-    (let [width 5
-          height 5
+    (let [width 20
+          height 20
+          target-position [(quot width 2) (dec height)]
           maze (maze/generate width height)
-          game (atom {:maze maze
-                      :p1   {:position [0 0]}
-                      :p2   {:position [(dec width) 0]}})]
-      (>! send-a {:maze maze :position (get-in @game [:p1 :position]) :opponent-position (get-in @game [:p2 :position])})
-      (>! send-b {:maze maze :position (get-in @game [:p2 :position]) :opponent-position (get-in @game [:p1 :position])})
+          game (atom {:maze   maze
+                      :p1     {:position [0 0]}
+                      :p2     {:position [(dec width) 0]}
+                      :target target-position})]
+      (>! send-a {:maze              maze
+                  :position          (get-in @game [:p1 :position])
+                  :opponent-position (get-in @game [:p2 :position])
+                  :target            target-position})
+      (>! send-b {:maze              maze
+                  :position          (get-in @game [:p2 :position])
+                  :opponent-position (get-in @game [:p1 :position])
+                  :target            target-position})
       (loop []
         (let [[msg chan] (alts! [recv-a recv-b])
               player (if (= chan recv-a) :p1 :p2)
@@ -54,9 +62,14 @@
                                                               :opponent-position (get-in @game [other-player :position])})
                       (>! (if (= chan recv-a) send-b send-a) {:position          (get-in @game [other-player :position])
                                                               :opponent-position (get-in @game [player :position])}))
-                    (do
-                      (swap! game assoc-in [player :position] (:move msg))
-                      (>! (if (= chan recv-a) send-b send-a) {:opponent-position (:move msg)})))))
+                    (if (= player-pos target-position)
+                      (do
+                        (log/info player "wins")
+                        (>! (if (= player :p1) send-a send-b) {:result :win})
+                        (>! (if (= player :p1) send-b send-a) {:result :lose}))
+                      (do
+                        (swap! game assoc-in [player :position] (:move msg))
+                        (>! (if (= chan recv-a) send-b send-a) {:opponent-position (:move msg)}))))))
               ; (log/debug "after" player (get-in @game [player :position]) other-player (get-in @game [other-player :position]))
               (recur))
             ((log/info "cleaning up pair")

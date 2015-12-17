@@ -10,8 +10,16 @@
 
 (def send-ch (chan))
 
+(defn- prepare-url [path]
+  (let [loc (.-location js/window)]
+    (str (if (= "https" (.-protocol loc))
+           "wss" "ws")
+         "://"
+         (.-host loc)
+         path)))
+
 (defn connect-socket []
-  (let [ws (js/WebSocket. "ws://localhost:3000/ws")]
+  (let [ws (js/WebSocket. (prepare-url "/ws"))]
     (set! (.-onopen ws) (fn [] (log "connection opened")))
     (set! (.-onclose ws) (fn [] (log "connection close")))
     (set! (.-onmessage ws) (fn [e]
@@ -19,13 +27,16 @@
                                                  :keywordize-keys true)]
                                (js/console.log data)
                                (when (:maze data)
-                                 (reset! game {:maze (:maze data)
-                                               :position (:position data)
+                                 (reset! game {:maze              (:maze data)
+                                               :target            (:target data)
+                                               :position          (:position data)
                                                :opponent-position (:opponent-position data)}))
                                (when (:position data)
                                  (swap! game assoc :position (:position data)))
                                (when (:opponent-position data)
-                                 (swap! game assoc :opponent-position (:opponent-position data))))))
+                                 (swap! game assoc :opponent-position (:opponent-position data)))
+                               (when (:result data)
+                                 (reset! game {:result (:result data)})))))
     (go-loop []
              (when-let [msg (<! send-ch)]
                (.send ws (js/JSON.stringify (clj->js msg)))
@@ -67,7 +78,8 @@
 (defn render-maze []
   (let [maze (:maze @game)
         [pos-x pos-y] (:position @game)
-        [opp-x opp-y] (:opponent-position @game)]
+        [opp-x opp-y] (:opponent-position @game)
+        [target-x target-y] (:target @game)]
     [:table {:className "maze"}
      (doall
        (for [rownum (range (count maze)) :let [row (nth maze rownum)]]
@@ -87,13 +99,20 @@
                (if (and (= opp-x cellnum)
                         (= opp-y rownum))
                  "X"
-                 "\u00A0"))])]))]))
+                 (if (and (= target-x cellnum)
+                          (= target-y rownum))
+                   "V"
+                   "\u00A0")))])]))]))
 
 
 (defn page []
-  [:div "hello there"]
-  (when @game
-    [render-maze]))
+  [:h1 (if (:result @game)
+         (:result @game)
+         (if (:maze @game)
+           "Race!"
+           "Wait for opponent..."))
+   (when (:maze @game)
+     [render-maze])])
 
 (r/render [page]
           (js/document.getElementById "app"))
