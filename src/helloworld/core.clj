@@ -21,16 +21,13 @@
                   (on-close chn (fn [_]
                                   (close! receive-ch)))
                   (on-receive chn (fn [msg]
-                                    (>!! receive-ch msg)))
-
-                  (send! chn (json/json-str (maze/generate 5 5)))
-
+                                    (>!! receive-ch (json/read-str msg :key-fn keyword))))
                   (go-loop []
                     (let [msg (<! send-ch)]
                       (if msg
                         (do
                           (log/info "->" msg)
-                          (send! chn (str msg))
+                          (send! chn (json/json-str msg))
                           (recur))
                         (do
                           (log/info "shutting down channel")

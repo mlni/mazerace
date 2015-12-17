@@ -8,18 +8,34 @@
 (defn log [msg]
   (js/console.log (.getTime (js/Date.)) msg))
 
+(def send-ch (chan))
+
 (defn connect-socket []
   (let [ws (js/WebSocket. "ws://localhost:3000/ws")]
     (set! (.-onopen ws) (fn [] (log "connection opened")))
     (set! (.-onclose ws) (fn [] (log "connection close")))
     (set! (.-onmessage ws) (fn [e]
-                             (let [data (js->clj (js/JSON.parse (.-data e)) :keywordize-keys true)]
+                             (let [data (js->clj (js/JSON.parse (.-data e))
+                                                 :keywordize-keys true)]
                                (js/console.log data)
-                               (when data
-                                 (reset! game {:maze data :position [0 0]})))))))
+                               (when (:maze data)
+                                 (reset! game {:maze (:maze data)
+                                               :position (:position data)
+                                               :opponent-position (:opponent-position data)}))
+                               (when (:position data)
+                                 (swap! game assoc :position (:position data)))
+                               (when (:opponent-position data)
+                                 (swap! game assoc :opponent-position (:opponent-position data))))))
+    (go-loop []
+             (when-let [msg (<! send-ch)]
+               (.send ws (js/JSON.stringify (clj->js msg)))
+               (recur)))))
 
 (log "Starting")
 (connect-socket)
+
+(defn send! [msg]
+  (go (>! send-ch msg)))
 
 (defn- within-boundary [maze x y]
   (and (>= x 0) (>= y 0) (< x (count (first maze))) (< y (count maze))))
@@ -34,7 +50,8 @@
     (when (and (within-boundary maze xx yy)
                (not (get-in maze [y x wall])))
       (log (str "moving to " xx " " yy))
-      (swap! game assoc :position [xx yy]))))
+      (swap! game assoc :position [xx yy])
+      (send! {:move [xx yy]}))))
 
 (set! (.-onkeydown js/document)
       (fn [e]
@@ -49,7 +66,8 @@
 
 (defn render-maze []
   (let [maze (:maze @game)
-        [pos-x pos-y] (:position @game)]
+        [pos-x pos-y] (:position @game)
+        [opp-x opp-y] (:opponent-position @game)]
     [:table {:className "maze"}
      (doall
        (for [rownum (range (count maze)) :let [row (nth maze rownum)]]
@@ -66,7 +84,10 @@
              (if (and (= pos-x cellnum)
                       (= pos-y rownum))
                "O"
-               "\u00A0")])]))]))
+               (if (and (= opp-x cellnum)
+                        (= opp-y rownum))
+                 "X"
+                 "\u00A0"))])]))]))
 
 
 (defn page []
