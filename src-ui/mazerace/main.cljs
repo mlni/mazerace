@@ -51,7 +51,7 @@
 (defn- within-boundary [maze x y]
   (and (>= x 0) (>= y 0) (< x (count (first maze))) (< y (count maze))))
 
-(defn attempt-move [dir]
+(defn attempt-move! [dir]
   (let [[x y] (:position @game)
         maze (:maze @game)
         [dx dy] (get {:up [0 -1] :down [0 1] :left [-1 0] :right [1 0]} dir)
@@ -71,38 +71,37 @@
                                          37 :left
                                          39 :right
                                          :none)]
-          (log (str "direction " dir))
           (when (not= dir :none)
-            (attempt-move dir)))))
+            (attempt-move! dir)))))
+
+(defn- render-cell [game cell]
+  (let [symbols [[:position "O"]
+                 [:opponent-position "X"]
+                 [:target "V"]]
+        default "\u00A0"]
+    (or (first (drop-while nil?
+                           (map (fn [[key symbol]]
+                                  (when (= (get game key) cell)
+                                    symbol)) symbols)))
+        default)))
 
 (defn render-maze []
-  (let [maze (:maze @game)
-        [pos-x pos-y] (:position @game)
-        [opp-x opp-y] (:opponent-position @game)
-        [target-x target-y] (:target @game)]
+  (let [maze (:maze @game)]
     [:table {:className "maze"}
      (doall
        (for [rownum (range (count maze)) :let [row (nth maze rownum)]]
          ^{:key rownum}
          [:tr {:className "row"}
-          (for [cellnum (range (count row))
-                :let [cell (nth row cellnum)
-                      style (str (when (:l cell) "left ")
-                                 (when (:r cell) "right ")
-                                 (when (:u cell) "top ")
-                                 (when (:d cell) "bottom "))]]
-            ^{:key cellnum}
-            [:td {:className style}
-             (if (and (= pos-x cellnum)
-                      (= pos-y rownum))
-               "O"
-               (if (and (= opp-x cellnum)
-                        (= opp-y rownum))
-                 "X"
-                 (if (and (= target-x cellnum)
-                          (= target-y rownum))
-                   "V"
-                   "\u00A0")))])]))]))
+          (doall
+            (for [cellnum (range (count row))
+                  :let [cell (nth row cellnum)
+                        style (str (when (:l cell) "left ")
+                                   (when (:r cell) "right ")
+                                   (when (:u cell) "top ")
+                                   (when (:d cell) "bottom "))]]
+              ^{:key cellnum}
+              [:td {:className style}
+               (render-cell @game [cellnum rownum])]))]))]))
 
 
 (defn page []
