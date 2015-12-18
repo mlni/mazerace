@@ -50,6 +50,7 @@
             (do
               (log/info "Received " msg "from" player)
               (when (:move msg)
+                ; TODO: add sanity check that the new position is 1 away from previous
                 (let [player-pos (:move msg)
                       other-pos (get-in @game [other-player :position])]
                   (log/debug player player-pos other-player other-pos)
