@@ -30,11 +30,15 @@
                                  (reset! game {:maze              (:maze data)
                                                :target            (:target data)
                                                :position          (:position data)
-                                               :opponent-position (:opponent-position data)}))
+                                               :opponent-position (:opponent-position data)
+                                               :jumpers           (:jumpers data)
+                                               :throwers          (:throwers data)}))
                                (when (:position data)
                                  (swap! game assoc :position (:position data)))
                                (when (:opponent-position data)
                                  (swap! game assoc :opponent-position (:opponent-position data)))
+                               (when (:jumpers data)
+                                 (swap! game assoc :jumpers (:jumpers data)))
                                (when (:result data)
                                  (reset! game {:result (:result data)})))))
     (go-loop []
@@ -77,11 +81,15 @@
 (defn- render-cell [game cell]
   (let [symbols [[:position "O"]
                  [:opponent-position "X"]
-                 [:target "V"]]
+                 [:target "V"]
+                 [:jumpers "\u25EF"]
+                 [:throwers "\u2B24"]]
         default "\u00A0"]
     (or (first (drop-while nil?
                            (map (fn [[key symbol]]
-                                  (when (= (get game key) cell)
+                                  (when (or (= (get game key) cell)
+                                            (some (fn [x]
+                                                    (= cell x)) (get game key)))
                                     symbol)) symbols)))
         default)))
 

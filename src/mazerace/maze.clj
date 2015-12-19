@@ -24,13 +24,12 @@
         (assoc-in [this-y this-x direction] false)
         (assoc-in [other-y other-x (reverse-direction direction)] false))))
 
-(defn generate [width height]
+(defn generate [width height target-position]
   (let [walls (into [] (for [y (range height)]
                          (into [] (for [x (range width)]
                                     {:u true :d true :l true :r true}))))
         visited (hash-set)
-        start [(quot width 2) (dec height)]
-        path (list start)]
+        path (list target-position)]
     (loop [path path visited visited walls walls]
       (if (empty? path)
         walls
