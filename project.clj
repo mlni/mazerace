@@ -14,12 +14,17 @@
   :min-lein-version "2.0.0"
   :source-paths ["src" "src-ui"]
   :main mazerace.core
+  :aot [mazerace.core]
   :plugins [[lein-cljsbuild "1.1.1"]]
   :clean-targets [:target-path "resources/public/main.js"]
   :hooks [leiningen.cljsbuild]
   :uberjar-name "mazerace.jar"
-  :cljsbuild {:builds [{:source-paths ["src-ui"]
-                        :compiler     {:output-to     "resources/public/main.js"
-                                       :optimizations :whitespace
-                                       :pretty-print  true}}]}
+  :profiles {:uberjar {:cljsbuild {:builds [{:source-paths ["src-ui"]
+                                             :compiler     {:output-to     "resources/public/main.js"
+                                                            :optimizations :advanced
+                                                            :pretty-print  false}}]}}
+             :dev     {:cljsbuild {:builds [{:source-paths ["src-ui"]
+                                             :compiler     {:output-to     "resources/public/main.js"
+                                                            :optimizations :whitespace
+                                                            :pretty-print  true}}]}}}
   )
