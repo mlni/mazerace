@@ -106,8 +106,6 @@
             p2-update (find-differences
                         (render-game-state (if (= player :p2) game' game) :p2)
                         (render-game-state final-state :p2))]
-        (log/debug "p1 diff" p1-update)
-        (log/debug "p2 diff" p2-update)
         [final-state p1-update p2-update]))))
 
 (defn- game-loop [game [recv-a send-a] [recv-b send-b]]
@@ -125,19 +123,24 @@
                 (>! send-b p2-update))
               (reset! game game')))
           (recur))
-        ((log/info "cleaning up pair")
+        (do
+          (log/info "cleaning up pair")
           (close! send-a)
           (close! send-b)))))
   (log/info "Exiting game loop"))
 
 (defn- make-game []
-  (let [width 5
-        height 5
+  (let [width 20
+        height 20
+        num-of-jumpers 2
+        num-of-throwers 2
         target-position [(quot width 2) (dec height)]
         p1-position [0 0]
         p2-position [(dec width) 0]
-        jumpers [(place-randomly [width height] [p1-position p2-position target-position])]
-        throwers [(place-randomly [width height] (concat jumpers [p1-position p2-position target-position]))]
+        jumpers (repeatedly num-of-jumpers
+                            #(place-randomly [width height] [p1-position p2-position target-position]))
+        throwers (repeatedly num-of-throwers
+                             #(place-randomly [width height] (concat jumpers [p1-position p2-position target-position])))
         maze (maze/generate width height target-position)]
     {:maze     maze
      :p1       {:position p1-position}
