@@ -1,11 +1,34 @@
 (ns mazerace.game
   (:require [clojure.tools.logging :as log]
-            [clojure.core.async :as a :refer [>! <! >!! <!! go chan close! thread alts! alts!! timeout go-loop]]
+            [clojure.core.async :refer [>! <! >!! <!! go chan close! thread alts! alts!! timeout go-loop]]
             [mazerace.maze :as maze]
             [mazerace.maze :as maze]))
 
+
 (defn- the-other [player]
   (if (= :p1 player) :p2 :p1))
+
+(defn- render-game-state [game player]
+  {:maze              (:maze game)
+   :position          (get-in game [player :position])
+   :opponent-position (get-in game [(the-other player) :position])
+   :result            (get-in game [player :result])
+   :jumpers           (get-in game [:jumpers])
+   :throwers          (get-in game [:throwers])
+   :target            (:target game)})
+
+(defn- abs [x]
+  (max x (- x)))
+
+(defn- find-differences [a b]
+  (let [keys (apply sorted-set (concat (keys a) (keys b)))]
+    (reduce (fn [r [k v]] (assoc r k v))
+            nil
+            (keep identity
+                  (map (fn [k]
+                         (when (not= (get a k) (get b k))
+                           [k (get b k)]))
+                       keys)))))
 
 (defn- place-randomly [[width height] avoid-positions]
   (loop []
@@ -25,60 +48,74 @@
         height (count (get-in game [:maze]))]
     (place-randomly [width height] avoid)))
 
+(defn- handle-player-collision [game player]
+  (let [player-pos (get-in game [player :position])]
+    (when (= player-pos (get-in game [(the-other player) :position]))
+      (do
+        (log/info "Collision, randomizing positions")
+        (-> game
+            (assoc-in [player :position] (place-player-randomly game player))
+            (assoc-in [(the-other player) :position] (place-player-randomly game (the-other player))))))))
 
-; TODO: split this up into:
-; * pure functions that react to player moves
-; * change detection that sends update messages to players
-; * main loop that keeps track of and updates state
+(defn- handle-jumpers [game player]
+  (let [player-pos (get-in game [player :position])]
+    (when (some #(= player-pos %) (:jumpers game))
+      (-> game
+          (assoc-in [player :position] (place-player-randomly game player))
+          (update :jumpers (fn [jumpers] (remove #(= player-pos %) jumpers)))))))
+
+(defn- handle-finish [game player]
+  (let [player-pos (get-in game [player :position])]
+    (when (= player-pos (get game :target))
+      (-> game
+          (assoc-in [player :result] :win)
+          (assoc-in [(the-other player) :result] :lose)))))
+
+(defn- player-move [game player player-pos]
+  (let [[prev-x prev-y] (get-in game [player :position])
+        [new-x new-y] player-pos
+        distance (+ (abs (- prev-x new-x))
+                    (abs (- prev-y new-y)))]
+    (log/debug player player-pos)
+    (let [game' (if (> distance 1)
+                  (do                                       ; detect obvious hacking attempts
+                    (log/info "Move jumps more than 1 step" player [prev-x prev-y] player-pos)
+                    game)
+                  (assoc-in game [player :position] player-pos))
+          pipeline [handle-player-collision
+                    handle-jumpers
+                    handle-finish]
+          final-state (reduce (fn [game step] (or (step game player) game))
+                              game' pipeline)]
+      (let [p1-update (find-differences
+                        (render-game-state (if (= player :p1) game' game) :p1)
+                        (render-game-state final-state :p1))
+            p2-update (find-differences
+                        (render-game-state (if (= player :p2) game' game) :p2)
+                        (render-game-state final-state :p2))]
+        (log/debug "p1 diff" p1-update)
+        (log/debug "p2 diff" p2-update)
+        [final-state p1-update p2-update]))))
 
 (defn- game-loop [game [recv-a send-a] [recv-b send-b]]
-  (let [target-position (:target @game)]
-    (go-loop []
-      (let [[msg chan] (alts! [recv-a recv-b])
-            player (if (= chan recv-a) :p1 :p2)
-            other-player (the-other player)]
-        (if msg
-          (do
-            (log/info "Received " msg "from" player)
-            (when (:move msg)
-              ; TODO: add sanity check that the new position is 1 away from previous
-              (let [player-pos (:move msg)
-                    other-pos (get-in @game [other-player :position])]
-                (log/debug player player-pos other-player other-pos)
-                (if (= player-pos other-pos)
-                  (do
-                    (log/info "Collision, randomizing positions")
-                    (swap! game assoc-in [player :position] (place-player-randomly @game player))
-                    (swap! game assoc-in [other-player :position] (place-player-randomly @game other-player))
-                    (>! (if (= chan recv-a) send-a send-b) {:position          (get-in @game [player :position])
-                                                            :opponent-position (get-in @game [other-player :position])})
-                    (>! (if (= chan recv-a) send-b send-a) {:position          (get-in @game [other-player :position])
-                                                            :opponent-position (get-in @game [player :position])}))
-                  (if (some #(= player-pos %) (:jumpers @game))
-                    ; handle jumper
-                    (do
-                      (log/info player "hit a jumper")
-                      (swap! game assoc-in [player :position] (place-player-randomly @game player))
-                      (swap! game update :jumpers (fn [jumpers] (remove #(= player-pos %) jumpers)))
-                      (>! (if (= chan recv-a) send-a send-b) {:position (get-in @game [player :position])
-                                                              :jumpers  (get-in @game [:jumpers])})
-                      (>! (if (= chan recv-a) send-a send-b) {:opponent-position (get-in @game [other-player :position])
-                                                              :jumpers           (get-in @game [:jumpers])})
-                      )
-                    (if (= player-pos target-position)
-                      (do
-                        (log/info player "wins")
-                        (>! (if (= player :p1) send-a send-b) {:result :win})
-                        (>! (if (= player :p1) send-b send-a) {:result :lose}))
-                      (do
-                        (swap! game assoc-in [player :position] (:move msg))
-                        (>! (if (= chan recv-a) send-b send-a) {:opponent-position (:move msg)})))))))
-            ; (log/debug "after" player (get-in @game [player :position]) other-player (get-in @game [other-player :position]))
-            (recur))
-          ((log/info "cleaning up pair")
-            (close! send-a)
-            (close! send-b)))))
-    (log/info "Exiting game loop")))
+  (go-loop []
+    (let [[msg chan] (alts! [recv-a recv-b])
+          player (if (= chan recv-a) :p1 :p2)]
+      (if msg
+        (do
+          (log/info "Received " msg "from" player)
+          (when (:move msg)
+            (let [[game' p1-update p2-update] (player-move @game player (:move msg))]
+              (when p1-update
+                (>! send-a p1-update))
+              (when p2-update
+                (>! send-b p2-update))
+              (reset! game game')))
+          (recur))
+        ((log/info "cleaning up pair")
+          (close! send-a)
+          (close! send-b)))))
+  (log/info "Exiting game loop"))
 
 (defn- make-game []
   (let [width 5
@@ -95,14 +132,6 @@
      :jumpers  jumpers
      :throwers throwers
      :target   target-position}))
-
-(defn- render-game-state [game player]
-  {:maze              (:maze game)
-   :position          (get-in game [player :position])
-   :opponent-position (get-in game [(the-other player) :position])
-   :jumpers           (get-in game [:jumpers])
-   :throwers          (get-in game [:throwers])
-   :target            (:target game)})
 
 (defn handle-game [[recv-a send-a] [recv-b send-b]]
   (let [game (make-game)]
