@@ -20,6 +20,10 @@
 (defn- abs [x]
   (max x (- x)))
 
+(defn- without [val]
+  (fn [vals]
+    (remove #(= val %) vals)))
+
 (defn- find-differences [a b]
   (let [keys (apply sorted-set (concat (keys a) (keys b)))]
     (reduce (fn [r [k v]] (assoc r k v))
@@ -62,7 +66,15 @@
     (when (some #(= player-pos %) (:jumpers game))
       (-> game
           (assoc-in [player :position] (place-player-randomly game player))
-          (update :jumpers (fn [jumpers] (remove #(= player-pos %) jumpers)))))))
+          (update :jumpers (without player-pos))))))
+
+(defn- handle-throwers [game player]
+  (let [player-pos (get-in game [player :position])
+        opponent (the-other player)]
+    (when (some #(= player-pos %) (:throwers game))
+      (-> game
+          (assoc-in [opponent :position] (place-player-randomly game opponent))
+          (update :throwers (without player-pos))))))
 
 (defn- handle-finish [game player]
   (let [player-pos (get-in game [player :position])]
@@ -84,6 +96,7 @@
                   (assoc-in game [player :position] player-pos))
           pipeline [handle-player-collision
                     handle-jumpers
+                    handle-throwers
                     handle-finish]
           final-state (reduce (fn [game step] (or (step game player) game))
                               game' pipeline)]

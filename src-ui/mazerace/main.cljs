@@ -39,6 +39,8 @@
                                  (swap! game assoc :opponent-position (:opponent-position data)))
                                (when (:jumpers data)
                                  (swap! game assoc :jumpers (:jumpers data)))
+                               (when (:throwers data)
+                                 (swap! game assoc :throwers (:throwers data)))
                                (when (:result data)
                                  (reset! game {:result (:result data)})))))
     (go-loop []
