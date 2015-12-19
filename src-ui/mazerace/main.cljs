@@ -12,7 +12,7 @@
 
 (defn- prepare-url [path]
   (let [loc (.-location js/window)]
-    (str (if (= "https" (.-protocol loc))
+    (str (if (= "https:" (.-protocol loc))
            "wss" "ws")
          "://"
          (.-host loc)
