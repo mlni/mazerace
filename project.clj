@@ -16,7 +16,7 @@
   :main mazerace.core
   :aot [mazerace.core]
   :plugins [[lein-cljsbuild "1.1.1"]]
-  :clean-targets [:target-path "resources/public/main.js"]
+  :clean-targets ^{:protect false} [:target-path "resources/public/main.js"]
   :hooks [leiningen.cljsbuild]
   :uberjar-name "mazerace.jar"
   :profiles {:uberjar {:cljsbuild {:builds [{:source-paths ["src-ui"]
