@@ -73,10 +73,15 @@
 
 (set! (.-onkeydown js/document)
       (fn [e]
+        (js/console.log (.-keyCode e))
         (let [dir (condp = (.-keyCode e) 38 :up
+                                         87 :up
                                          40 :down
+                                         83 :down
                                          37 :left
+                                         65 :left
                                          39 :right
+                                         68 :right
                                          :none)]
           (when (not= dir :none)
             (attempt-move! dir)))))
