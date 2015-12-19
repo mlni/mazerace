@@ -26,6 +26,7 @@
                              (let [data (js->clj (js/JSON.parse (.-data e))
                                                  :keywordize-keys true)]
                                (js/console.log data)
+                               ; TODO: clean up state management here
                                (when (:maze data)
                                  (reset! game {:maze              (:maze data)
                                                :target            (:target data)

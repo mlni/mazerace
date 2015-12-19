@@ -13,7 +13,7 @@
   (if (= 2 (count conns))
     (let [[a b] conns]
       (log/info "Got two players, launching game")
-      (game/handle-game a b)
+      (game/start-game a b)
       (recur []))
     (let [[v ch] (alts! (concat [incoming-connections] (map first conns)))]
       (if (= ch incoming-connections)

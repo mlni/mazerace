@@ -42,7 +42,7 @@
         (recur)
         [rand-x rand-y]))))
 
-(defn- place-player-randomly [game player]                  ; avoid the other player and the exit
+(defn- place-player-randomly [game player]
   (let [other-pos (get-in game [(the-other player) :position])
         target (get-in game [:target])
         avoid (concat (get-in game [:jumpers])
@@ -146,7 +146,7 @@
      :throwers throwers
      :target   target-position}))
 
-(defn handle-game [[recv-a send-a] [recv-b send-b]]
+(defn start-game [[recv-a send-a] [recv-b send-b]]
   (let [game (make-game)]
     (go
       (>! send-a (render-game-state game :p1))
