@@ -1,0 +1,13 @@
+{
+  "name": "mazerace-pertest",
+  "version": "0.0.1",
+  "description": "",
+  "author": "Matti Jagula",
+  "dependencies": {
+    "ws": "0.8.1"
+  },
+  "engines": {
+    "node": ">= 0.8.0"
+  },
+  "license": "MIT"
+}
