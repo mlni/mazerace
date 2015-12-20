@@ -3,6 +3,7 @@
   (:require [cljs.core.async :as async :refer (<! >! put! chan)]
             [reagent.core :as r]))
 
+(defonce connection-state (r/atom {:connecting true}))
 (defonce game (r/atom nil))
 
 (defn log [msg]
@@ -20,8 +21,12 @@
 
 (defn connect-socket []
   (let [ws (js/WebSocket. (prepare-url "/ws"))]
-    (set! (.-onopen ws) (fn [] (log "connection opened")))
-    (set! (.-onclose ws) (fn [] (log "connection close")))
+    (set! (.-onopen ws) (fn []
+                          (log "connection opened")
+                          (swap! connection-state assoc :connected true :connecting false)))
+    (set! (.-onclose ws) (fn []
+                           (log "connection close")
+                           (swap! connection-state assoc :connected false :connecting false)))
     (set! (.-onmessage ws) (fn [e]
                              (let [data (js->clj (js/JSON.parse (.-data e)) :keywordize-keys true)]
                                ; TODO: clean up state management here
@@ -122,12 +127,16 @@
 
 
 (defn page []
-  [:h1 (if (:result @game)
-         (:result @game)
-         (if (:maze @game)
-           "Race!"
-           "Wait for opponent..."))
-   (when (:maze @game)
+  [:h1 (if (:connecting @connection-state)
+         "Connecting..."
+         (if (not (:connected @connection-state))
+           "Disconnected"
+           (if (:result @game)
+             (:result @game)
+             (if (:maze @game)
+               "Race!"
+               "Waiting for an opponent..."))))
+   (when (and (:connected @connection-state) (:maze @game))
      [render-maze])])
 
 (r/render [page]
