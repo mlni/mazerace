@@ -23,9 +23,7 @@
     (set! (.-onopen ws) (fn [] (log "connection opened")))
     (set! (.-onclose ws) (fn [] (log "connection close")))
     (set! (.-onmessage ws) (fn [e]
-                             (let [data (js->clj (js/JSON.parse (.-data e))
-                                                 :keywordize-keys true)]
-                               (js/console.log data)
+                             (let [data (js->clj (js/JSON.parse (.-data e)) :keywordize-keys true)]
                                ; TODO: clean up state management here
                                (when (:maze data)
                                  (reset! game {:maze              (:maze data)
@@ -46,6 +44,7 @@
                                  (reset! game {:result (:result data)})))))
     (go-loop []
              (when-let [msg (<! send-ch)]
+               ; TODO: add sending keepalives if no messages during timeout period
                (.send ws (js/JSON.stringify (clj->js msg)))
                (recur)))))
 
@@ -58,22 +57,24 @@
 (defn- within-boundary [maze x y]
   (and (>= x 0) (>= y 0) (< x (count (first maze))) (< y (count maze))))
 
+(defn- has-wall? [cell dir]
+  (let [bit (bit-shift-left 1 (get {:up 0 :right 1 :down 2 :left 3} dir))]
+    (not (zero? (bit-and cell bit)))))
+
 (defn attempt-move! [dir]
   (let [[x y] (:position @game)
         maze (:maze @game)
         [dx dy] (get {:up [0 -1] :down [0 1] :left [-1 0] :right [1 0]} dir)
         xx (+ x dx)
-        yy (+ y dy)
-        wall (get {:up :u :down :d :left :l :right :r} dir)]
+        yy (+ y dy)]
     (when (and (within-boundary maze xx yy)
-               (not (get-in maze [y x wall])))
+               (not (has-wall? (get-in maze [y x]) dir)))
       (log (str "moving to " xx " " yy))
       (swap! game assoc :position [xx yy])
       (send! {:move [xx yy]}))))
 
 (set! (.-onkeydown js/document)
       (fn [e]
-        (js/console.log (.-keyCode e))
         (let [dir (condp = (.-keyCode e) 38 :up
                                          87 :up
                                          40 :down
@@ -111,10 +112,10 @@
           (doall
             (for [cellnum (range (count row))
                   :let [cell (nth row cellnum)
-                        style (str (when (:l cell) "left ")
-                                   (when (:r cell) "right ")
-                                   (when (:u cell) "top ")
-                                   (when (:d cell) "bottom "))]]
+                        style (str (when (has-wall? cell :left) "left ")
+                                   (when (has-wall? cell :right) "right ")
+                                   (when (has-wall? cell :up) "top ")
+                                   (when (has-wall? cell :down) "bottom "))]]
               ^{:key cellnum}
               [:td {:className style}
                (render-cell @game [cellnum rownum])]))]))]))
