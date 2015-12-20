@@ -131,8 +131,7 @@
         height (count maze)
         size 10]
     [:svg {:className    "maze-svg"
-           :viewBox      (str "-1 -1 " (+ 2 (* width size)) " " (+ 2 (* height size)))
-           "xmlns:xlink" "http://www.w3.org/1999/xlink"}
+           :viewBox      (str "-1 -1 " (+ 2 (* width size)) " " (+ 2 (* height size)))}
      [:g {:stroke "black" :stroke-width "1" :fill "white" :stroke-linecap "round"}
       (doall
         (for [rownum (range height)
