@@ -9,15 +9,18 @@
 (defn handle-connection [recv-ch send-ch]
   (go (>! incoming-connections [recv-ch send-ch])))
 
-(go-loop [conns []]
-  (if (= 2 (count conns))
-    (let [[a b] conns]
-      (log/info "Got two players, launching game")
-      (game/start-game a b)
-      (recur []))
-    (let [[v ch] (alts! (concat [incoming-connections] (map first conns)))]
-      (if (= ch incoming-connections)
-        (recur (conj conns v))
-        (recur (if (nil? v)
-                 (filter (fn [[recv-ch _]] (not= recv-ch ch)) conns)
-                 conns))))))
+(try
+  (go-loop [conns []]
+    (if (= 2 (count conns))
+      (let [[a b] conns]
+        (log/info "Got two players, launching game")
+        (game/start-game a b)
+        (recur []))
+      (let [[v ch] (alts! (concat [incoming-connections] (map first conns)))]
+        (if (= ch incoming-connections)
+          (recur (conj conns v))
+          (recur (if (nil? v)
+                   (filter (fn [[recv-ch _]] (not= recv-ch ch)) conns)
+                   conns))))))
+  (catch Exception e
+    (log/error "Exception in connection handler" e)))

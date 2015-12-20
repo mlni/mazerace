@@ -109,24 +109,27 @@
         [final-state p1-update p2-update]))))
 
 (defn- game-loop [game [recv-a send-a] [recv-b send-b]]
-  (go-loop []
-    (let [[msg chan] (alts! [recv-a recv-b])
-          player (if (= chan recv-a) :p1 :p2)]
-      (if msg
-        (do
-          (log/info "Received " msg "from" player)
-          (when (:move msg)
-            (let [[game' p1-update p2-update] (player-move @game player (:move msg))]
-              (when p1-update
-                (>! send-a p1-update))
-              (when p2-update
-                (>! send-b p2-update))
-              (reset! game game')))
-          (recur))
-        (do
-          (log/info "cleaning up pair")
-          (close! send-a)
-          (close! send-b)))))
+  (try
+    (go-loop []
+      (let [[msg chan] (alts! [recv-a recv-b])
+            player (if (= chan recv-a) :p1 :p2)]
+        (if msg
+          (do
+            (log/info "Received " msg "from" player)
+            (when (:move msg)
+              (let [[game' p1-update p2-update] (player-move @game player (:move msg))]
+                (when p1-update
+                  (>! send-a p1-update))
+                (when p2-update
+                  (>! send-b p2-update))
+                (reset! game game')))
+            (recur))
+          (do
+            (log/info "cleaning up pair")
+            (close! send-a)
+            (close! send-b)))))
+    (catch Exception e
+      (log/error "Error in game loop" e)))
   (log/info "Exiting game loop"))
 
 (defn- make-game []
@@ -152,6 +155,9 @@
 (defn start-game [[recv-a send-a] [recv-b send-b]]
   (let [game (make-game)]
     (go
-      (>! send-a (render-game-state game :p1))
-      (>! send-b (render-game-state game :p2)))
+      (try
+        (>! send-a (render-game-state game :p1))
+        (>! send-b (render-game-state game :p2))
+        (catch Exception e
+          (log/error "Error sending game state" e))))
     (game-loop (atom game) [recv-a send-a] [recv-b send-b])))
