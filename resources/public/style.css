@@ -1,6 +1,10 @@
+.container {
+  width: 100%;
+  height: 100%;
+  text-align: center;
+}
 
-
-.maze {
+.maze-html {
   padding: 0px;
   margin: 0px;
   border: 1px solid black;
@@ -8,24 +12,29 @@
   font-size: 13px;
 }
 
-.maze tr {
+.maze-html tr {
   height: 20px;
 }
 
-.maze td {
+.maze-html td {
   width: 20px;
   text-align: center;
 }
 
-.maze .left {
+.maze-html .left {
   border-left: 1px solid black;
 }
-.maze .right {
+.maze-html .right {
   border-right: 1px solid black;
 }
-.maze .top {
+.maze-html .top {
   border-top: 1px solid black;
 }
-.maze .right {
+.maze-html .right {
   border-right: 1px solid black;
+}
+
+.maze-svg {
+  width: 75%;
+  height: 75%;
 }

@@ -107,9 +107,9 @@
                                     symbol)) symbols)))
         default)))
 
-(defn render-maze []
+(defn render-maze-html []
   (let [maze (:maze @game)]
-    [:table {:className "maze"}
+    [:table {:className "maze-html"}
      (doall
        (for [rownum (range (count maze)) :let [row (nth maze rownum)]]
          ^{:key rownum}
@@ -125,19 +125,100 @@
               [:td {:className style}
                (render-cell @game [cellnum rownum])]))]))]))
 
+(defn- render-maze-svg []
+  (let [maze (:maze @game)
+        width (count (first maze))
+        height (count maze)
+        size 10]
+    [:svg {:className    "maze-svg"
+           :viewBox      (str "-1 -1 " (+ 2 (* width size)) " " (+ 2 (* height size)))
+           "xmlns:xlink" "http://www.w3.org/1999/xlink"}
+     [:g {:stroke "black" :stroke-width "1" :fill "white" :stroke-linecap "round"}
+      (doall
+        (for [rownum (range height)
+              :let [row (nth maze rownum)]
+              cellnum (range width)
+              :let [cell (nth row cellnum)]]
+          ^{:key (str rownum "-" cellnum)}
+          [:g {}
+           (when (has-wall? cell :up)
+             [:line {:x1 (* cellnum size)
+                     :y1 (* rownum size)
+                     :x2 (* (inc cellnum) size)
+                     :y2 (* rownum size)}])
+           (when (has-wall? cell :right)
+             [:line {:x1 (* (inc cellnum) size)
+                     :y1 (* rownum size)
+                     :x2 (* (inc cellnum) size)
+                     :y2 (* (inc rownum) size)}])
+           (when (has-wall? cell :down)
+             [:line {:x1 (* cellnum size)
+                     :y1 (* (inc rownum) size)
+                     :x2 (* (inc cellnum) size)
+                     :y2 (* (inc rownum) size)}])
+           (when (has-wall? cell :left)
+             [:line {:x1 (* cellnum size)
+                     :y1 (* rownum size)
+                     :x2 (* cellnum size)
+                     :y2 (* (inc rownum) size)}])]))]
+     [:g
+      (doall
+        (for [[x y] (:jumpers @game)]
+          ^{:key (str "jmp" x "-" y)}
+          [:g {:stroke "gray" :stroke-width "1" :fill "gray"} ;shadow
+           [:ellipse {:cx (+ (* x size) (quot size 2))
+                      :cy (+ (* y size) (quot size 2) +1)
+                      :rx (dec (quot size 2))
+                      :ry (dec (quot size 2.5))}]
+           [:g {:stroke "black" :stroke-width "1" :fill "white"}
+            [:ellipse {:cx (+ (* x size) (quot size 2))
+                       :cy (+ (* y size) (quot size 2) -1)
+                       :rx (dec (quot size 2))
+                       :ry (dec (quot size 2.5))}]]]))]
+     [:g
+      (doall
+        (for [[x y] (:throwers @game)]
+          ^{:key (str "thr" x "-" y)}
+          [:g {:stroke "gray" :stroke-width "1" :fill "gray"} ;shadow
+           [:ellipse {:cx (+ (* x size) (quot size 2))
+                      :cy (+ (* y size) (quot size 2) +1)
+                      :rx (dec (quot size 2))
+                      :ry (dec (quot size 2.5))}]
+           [:g {:stroke "black" :stroke-width "1" :fill "black"}
+            [:ellipse {:cx (+ (* x size) (quot size 2))
+                       :cy (+ (* y size) (quot size 2) -1)
+                       :rx (dec (quot size 2))
+                       :ry (dec (quot size 2.5))}]]]))]
+     [:g {:stroke "black" :stroke-width "1" :fill "white"}
+      (let [[x y] (:position @game)]
+        [:circle {:cx (+ (* x size) (quot size 2))
+                  :cy (+ (* y size) (quot size 2))
+                  :r  (dec (quot size 2))}])]
+     [:g {:stroke "black" :stroke-width "1" :fill "black"}
+      (let [[x y] (:opponent-position @game)]
+        [:circle {:cx (+ (* x size) (quot size 2))
+                  :cy (+ (* y size) (quot size 2))
+                  :r  (dec (quot size 2))}])]
+     [:g {:stroke "black" :stroke-width "0.5" :fill "orange"}
+      (let [[x y] (:target @game)
+            hs (quot size 2)]
+        [:circle {:cx (+ (* x size) hs)
+                  :cy (+ (* y size) hs)
+                  :r  (dec hs)}])]]))
 
 (defn page []
-  [:h1 (if (:connecting @connection-state)
-         "Connecting..."
-         (if (not (:connected @connection-state))
-           "Disconnected"
-           (if (:result @game)
-             (:result @game)
-             (if (:maze @game)
-               "Race!"
-               "Waiting for an opponent..."))))
+  [:div.container
+   [:h1 (if (:connecting @connection-state)
+          "Connecting..."
+          (if (not (:connected @connection-state))
+            "Disconnected"
+            (if (:result @game)
+              (:result @game)
+              (if (:maze @game)
+                "Race!"
+                "Waiting for an opponent..."))))]
    (when (and (:connected @connection-state) (:maze @game))
-     [render-maze])])
+     [render-maze-svg])])
 
 (r/render [page]
           (js/document.getElementById "app"))
