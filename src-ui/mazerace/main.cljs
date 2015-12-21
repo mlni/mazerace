@@ -22,8 +22,8 @@
 (defn- direction [[ox oy] [nx ny]]
   (cond (< ox nx) :right
         (> ox nx) :left
-        (< oy ny) :down
-        :else :up))
+        (> oy ny) :up
+        :else :down))
 
 (defn connect-socket []
   (let [ws (js/WebSocket. (prepare-url "/ws"))]
@@ -157,6 +157,39 @@
       [:circle {:cx 55 :cy 80 :r 2 :fill "black"}]
       [:path {:d "M50 19 C 46 15 54 5 50 1"}]]]))
 
+(defn- render-cheese [x y size]
+  [:svg {:width   (dec size)
+         :height  (dec size)
+         :x       (+ 0.5 (* x size))
+         :y       (* y size)
+         :viewBox "0 0 100 100"}
+   [:g {:stroke "black" :stroke-width 2 :fill "yellow"}
+    [:path {:d "M 5 50
+                L 95 50
+                L 95 85
+                L 5 85
+                Z"}]
+    [:path {:d "M 5 50
+                L 66 25
+                A 50 50 0 0 1 95 50
+                Z"}]]
+   [:g {:stroke "black" :stroke-width 2 :fill "white"}
+    [:circle {:cx "25" :cy "65" :r "6"}]
+    [:circle {:cx "55" :cy "75" :r "6"}]
+    [:circle {:cx "80" :cy "60" :r "6"}]]])
+
+(defn- render-portal [x y size color]
+  [:g {:stroke "gray" :stroke-width "0" :fill "gray"}       ;shadow
+   [:ellipse {:cx (+ (* x size) (quot size 2))
+              :cy (+ (* y size) (quot size 2) +0.5)
+              :rx (dec (quot size 2))
+              :ry (dec (quot size 2.5))}]
+   [:g {:stroke "black" :stroke-width ".25" :fill color}
+    [:ellipse {:cx (+ (* x size) (quot size 2))
+               :cy (+ (* y size) (quot size 2) -0.5)
+               :rx (dec (quot size 2))
+               :ry (dec (quot size 2.5))}]]])
+
 (defn- render-maze-svg []
   (let [maze (:maze @game)
         width (count (first maze))
@@ -196,42 +229,21 @@
       (doall
         (for [[x y] (:jumpers @game)]
           ^{:key (str "jmp" x "-" y)}
-          [:g {:stroke "gray" :stroke-width "1" :fill "gray"} ;shadow
-           [:ellipse {:cx (+ (* x size) (quot size 2))
-                      :cy (+ (* y size) (quot size 2) +1)
-                      :rx (dec (quot size 2))
-                      :ry (dec (quot size 2.5))}]
-           [:g {:stroke "black" :stroke-width "1" :fill "white"}
-            [:ellipse {:cx (+ (* x size) (quot size 2))
-                       :cy (+ (* y size) (quot size 2) -1)
-                       :rx (dec (quot size 2))
-                       :ry (dec (quot size 2.5))}]]]))]
+          [render-portal x y size "white"]))]
      [:g
       (doall
         (for [[x y] (:throwers @game)]
           ^{:key (str "thr" x "-" y)}
-          [:g {:stroke "gray" :stroke-width "1" :fill "gray"} ;shadow
-           [:ellipse {:cx (+ (* x size) (quot size 2))
-                      :cy (+ (* y size) (quot size 2) +1)
-                      :rx (dec (quot size 2))
-                      :ry (dec (quot size 2.5))}]
-           [:g {:stroke "black" :stroke-width "1" :fill "black"}
-            [:ellipse {:cx (+ (* x size) (quot size 2))
-                       :cy (+ (* y size) (quot size 2) -1)
-                       :rx (dec (quot size 2))
-                       :ry (dec (quot size 2.5))}]]]))]
-     [:g {:stroke "black" :stroke-width "1" :fill "white"}
-      (let [[x y] (:position @game)]
-        [render-mouse x y (:direction @game) size "white"])]
-     [:g {:stroke "black" :stroke-width "1" :fill "black"}
+          [render-portal x y size "black"]))]
+     [:g
+      (let [[x y] (:target @game)]
+        [render-cheese x y size])]
+     [:g
       (let [[x y] (:opponent-position @game)]
         [render-mouse x y (:opponent-direction @game) size "gray"])]
-     [:g {:stroke "black" :stroke-width "0.5" :fill "orange"}
-      (let [[x y] (:target @game)
-            hs (quot size 2)]
-        [:circle {:cx (+ (* x size) hs)
-                  :cy (+ (* y size) hs)
-                  :r  (dec hs)}])]]))
+     [:g {:stroke "black" :stroke-width "1" :fill "white"}
+      (let [[x y] (:position @game)]
+        [render-mouse x y (:direction @game) size "white"])]]))
 
 (defn page []
   [:div.container

@@ -1,0 +1,33 @@
+<html>
+<head>
+    <style>
+    .box {
+        width: 30px;
+        height: 30px;
+        border: 1px dashed black;
+    }
+    </style>
+</head>
+<body>
+    <h1>SVG</h1>
+    <svg class="box" viewBox="0 0 100 100">
+        <g stroke="black" stroke-width="2" fill="yellow">
+            <path d="M 5 50
+                     L 95 50
+                     L 95 85
+                     L 5 85
+                     Z"/>
+
+            <path d="M 5 50
+              L 66 25
+              A 50 50 0 0 1 95 50
+              Z" />
+        </g>
+        <g stroke="black" stroke-width="2" fill="white">
+            <circle cx="25" cy="65" r="6" />
+            <circle cx="55" cy="75" r="6" />
+            <circle cx="80" cy="60" r="6" />
+        </g>
+    </svg>
+</body>
+</html>
