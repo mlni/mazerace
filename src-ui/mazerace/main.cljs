@@ -49,8 +49,7 @@
                                  (swap! game assoc :opponent-direction
                                         (direction (or (:opponent-position @game) (:opponent-position data))
                                                    (:opponent-position data)))
-                                 (swap! game assoc :opponent-position (:opponent-position data))
-                                 (log (str "opponent direction: " (:opponent-direction @game))))
+                                 (swap! game assoc :opponent-position (:opponent-position data)))
                                (when (:jumpers data)
                                  (swap! game assoc :jumpers (:jumpers data)))
                                (when (:throwers data)
