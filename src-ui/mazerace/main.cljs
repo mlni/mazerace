@@ -19,6 +19,12 @@
          (.-host loc)
          path)))
 
+(defn- direction [[ox oy] [nx ny]]
+  (cond (< ox nx) :right
+        (> ox nx) :left
+        (< oy ny) :down
+        :else :up))
+
 (defn connect-socket []
   (let [ws (js/WebSocket. (prepare-url "/ws"))]
     (set! (.-onopen ws) (fn []
@@ -40,7 +46,11 @@
                                (when (:position data)
                                  (swap! game assoc :position (:position data)))
                                (when (:opponent-position data)
-                                 (swap! game assoc :opponent-position (:opponent-position data)))
+                                 (swap! game assoc :opponent-direction
+                                        (direction (or (:opponent-position @game) (:opponent-position data))
+                                                   (:opponent-position data)))
+                                 (swap! game assoc :opponent-position (:opponent-position data))
+                                 (log (str "opponent direction: " (:opponent-direction @game))))
                                (when (:jumpers data)
                                  (swap! game assoc :jumpers (:jumpers data)))
                                (when (:throwers data)
@@ -76,6 +86,7 @@
                (not (has-wall? (get-in maze [y x]) dir)))
       (log (str "moving to " xx " " yy))
       (swap! game assoc :position [xx yy])
+      (swap! game assoc :direction dir)
       (send! {:move [xx yy]}))))
 
 (set! (.-onkeydown js/document)
@@ -125,13 +136,35 @@
               [:td {:className style}
                (render-cell @game [cellnum rownum])]))]))]))
 
+(defn- render-mouse [x y direction size color]
+  (let [rotate (get {:left 90 :up 180 :right 270 :down 0} direction 0)]
+    [:svg {:width   (dec size)
+           :height  (dec size)
+           :x       (+ 0.5 (* x size))
+           :y       (+ 0.5 (* y size))
+           :viewBox "0 0 100 100"}
+     [:g {:stroke "black" :stroke-width 3 :fill color :transform (str "rotate(" rotate ", 50, 50)")}
+      [:path {:d "M35 80
+        Q 50 115 65 80
+        A 10 10 -45 1 0 70 60
+        C 80 5 20 5 30 60
+        A 10 10 45 1 0 35 80
+        Z
+        M 70 60
+        A 10 10 0 0 0 60 65
+        M 30 60
+        A 10 10 0 0 1 40 65"}]
+      [:circle {:cx 45 :cy 80 :r 2 :fill "black"}]
+      [:circle {:cx 55 :cy 80 :r 2 :fill "black"}]
+      [:path {:d "M50 19 C 46 15 54 5 50 1"}]]]))
+
 (defn- render-maze-svg []
   (let [maze (:maze @game)
         width (count (first maze))
         height (count maze)
         size 10]
-    [:svg {:className    "maze-svg"
-           :viewBox      (str "-1 -1 " (+ 2 (* width size)) " " (+ 2 (* height size)))}
+    [:svg {:className "maze-svg"
+           :viewBox   (str "-1 -1 " (+ 2 (* width size)) " " (+ 2 (* height size)))}
      [:g {:stroke "black" :stroke-width "1" :fill "white" :stroke-linecap "round"}
       (doall
         (for [rownum (range height)
@@ -190,14 +223,10 @@
                        :ry (dec (quot size 2.5))}]]]))]
      [:g {:stroke "black" :stroke-width "1" :fill "white"}
       (let [[x y] (:position @game)]
-        [:circle {:cx (+ (* x size) (quot size 2))
-                  :cy (+ (* y size) (quot size 2))
-                  :r  (dec (quot size 2))}])]
+        [render-mouse x y (:direction @game) size "white"])]
      [:g {:stroke "black" :stroke-width "1" :fill "black"}
       (let [[x y] (:opponent-position @game)]
-        [:circle {:cx (+ (* x size) (quot size 2))
-                  :cy (+ (* y size) (quot size 2))
-                  :r  (dec (quot size 2))}])]
+        [render-mouse x y (:opponent-direction @game) size "gray"])]
      [:g {:stroke "black" :stroke-width "0.5" :fill "orange"}
       (let [[x y] (:target @game)
             hs (quot size 2)]
