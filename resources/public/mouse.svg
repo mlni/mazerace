@@ -1,0 +1,31 @@
+<html>
+<head>
+    <style>
+    .box {
+        width: 300px;
+        height: 300px;
+        border: 1px dashed black;
+    }
+    </style>
+</head>
+<body>
+    <h1>SVG</h1>
+    <svg class="box" viewBox="0 0 100 100">
+        <g stroke="black" stroke-width="2" fill="none">
+            <path d="M35 80
+                     Q 50 115 65 80
+                     A 10 10 -45 1 0 70 60
+                     C 80 5 20 5 30 60
+                     A 10 10 45 1 0 35 80
+                     Z
+                     M 70 60
+                     A 10 10 0 0 0 60 65
+                     M 30 60
+                     A 10 10 0 0 1 40 65" />
+            <circle cx="45" cy="80" r="2" fill="black" />
+            <circle cx="55" cy="80" r="2" fill="black" />
+            <path d="M50 19 C 46 15 54 5 50 1" />
+        </g>
+    </svg>
+</body>
+</html>

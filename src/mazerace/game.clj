@@ -48,7 +48,7 @@
         avoid (concat (get-in game [:jumpers])
                       (get-in game [:throwers])
                       [other-pos target])
-        width (count (get-in game [:maze 0]))
+        width (count (first (get game :maze)))
         height (count (get-in game [:maze]))]
     (place-randomly [width height] avoid)))
 
