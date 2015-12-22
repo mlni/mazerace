@@ -20,8 +20,8 @@
    </appender>
 
    <root>
-      <level value="INFO"/>
-      <!--appender-ref ref="consoleAppender"/-->
+      <level value="DEBUG"/>
+      <appender-ref ref="consoleAppender"/>
       <appender-ref ref="fileAppender"/>
    </root>
 
