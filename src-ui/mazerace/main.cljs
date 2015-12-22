@@ -91,15 +91,20 @@
 (set! (.-onkeydown js/document)
       (fn [e]
         (let [dir (condp = (.-keyCode e) 38 :up
-                                         87 :up
+                                         87 :up             ; w
+                                         75 :up             ; j
                                          40 :down
-                                         83 :down
+                                         83 :down           ; s
+                                         74 :down           ; k
                                          37 :left
-                                         65 :left
+                                         65 :left           ; a
+                                         72 :left           ; h
                                          39 :right
-                                         68 :right
+                                         68 :right          ; d
+                                         76 :right          ; l
                                          :none)]
           (when (not= dir :none)
+            (.preventDefault e)
             (attempt-move! dir)))))
 
 (defn- render-cell [game cell]
