@@ -12,14 +12,16 @@
    <appender name="fileAppender" class="org.apache.log4j.RollingFileAppender">
       <param name="append" value="false"/>
       <param name="file" value="/tmp/server.log"/>
+      <param name="maxBackupIndex" value="100"/>
+      <param name="maxFileSize" value="100000000"/>
       <layout class="org.apache.log4j.PatternLayout">
          <param name="ConversionPattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %5p %c{1} - %m%n"/>
       </layout>
    </appender>
 
    <root>
-      <level value="DEBUG"/>
-      <appender-ref ref="consoleAppender"/>
+      <level value="INFO"/>
+      <!--appender-ref ref="consoleAppender"/-->
       <appender-ref ref="fileAppender"/>
    </root>
 

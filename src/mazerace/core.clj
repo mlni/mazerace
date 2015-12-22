@@ -8,7 +8,7 @@
             [clojure.data.json :as json]
             [mazerace.connectivity :as conn]
             [mazerace.maze :as maze]
-            [clojure.core.async :refer [close! <! >!! chan go-loop]]
+            [clojure.core.async :refer [close! <! >! chan go go-loop]]
             [clojure.tools.logging :as log])
   (:gen-class))
 
@@ -21,13 +21,16 @@
                   (on-close chn (fn [_]
                                   (close! receive-ch)))
                   (on-receive chn (fn [msg]
-                                    (>!! receive-ch (json/read-str msg :key-fn keyword))))
+                                    (go (>! receive-ch (json/read-str msg :key-fn keyword)))))
                   (go-loop []
                     (let [msg (<! send-ch)]
                       (if msg
                         (do
-                          (log/info "->" msg)
-                          (send! chn (json/json-str msg))
+                          (try
+                            (log/debug "->" msg)
+                            (send! chn (json/json-str msg))
+                            (catch Exception e
+                              (log/error "Error sending data to WS" e)))
                           (recur))
                         (do
                           (log/info "shutting down channel")

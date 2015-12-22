@@ -79,6 +79,7 @@
 (defn- handle-finish [game player]
   (let [player-pos (get-in game [player :position])]
     (when (= player-pos (get game :target))
+      (log/info "Player" player "won")
       (-> game
           (assoc-in [player :result] :win)
           (assoc-in [(the-other player) :result] :lose)))))
@@ -115,7 +116,7 @@
             player (if (= chan recv-a) :p1 :p2)]
         (if msg
           (do
-            (log/info "Received " msg "from" player)
+            (log/debug "Received " msg "from" player)
             (when (:move msg)
               (let [[game' p1-update p2-update] (player-move @game player (:move msg))]
                 (when p1-update
