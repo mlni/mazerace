@@ -126,7 +126,8 @@
                 (reset! game game')))
             (recur))
           (do
-            (log/info "cleaning up pair")
+            (log/info player "disconnected, cleaning up pair")
+            (>! (if (= player :p1) send-b send-a) {:result :opponent-disconnected})
             (close! send-a)
             (close! send-b)))))
     (catch Exception e

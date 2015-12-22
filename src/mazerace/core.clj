@@ -17,11 +17,19 @@
   (with-channel req chn
                 (log/debug "New connection")
                 (let [receive-ch (chan)
-                      send-ch (chan)]
+                      send-ch (chan)
+                      cleanup! (fn []
+                                 (close! receive-ch)
+                                 (close chn))]
                   (on-close chn (fn [_]
                                   (close! receive-ch)))
                   (on-receive chn (fn [msg]
-                                    (go (>! receive-ch (json/read-str msg :key-fn keyword)))))
+                                    (try
+                                      (let [data (json/read-str msg :key-fn keyword)]
+                                        (go (>! receive-ch data)))
+                                      (catch Exception e
+                                        (log/error "Error parsing input message" e)
+                                        (cleanup!)))))
                   (go-loop []
                     (let [msg (<! send-ch)]
                       (if msg
@@ -30,11 +38,12 @@
                             (log/debug "->" msg)
                             (send! chn (json/json-str msg))
                             (catch Exception e
-                              (log/error "Error sending data to WS" e)))
+                              (log/error "Error sending data to WS" e)
+                              (cleanup!)))
                           (recur))
                         (do
                           (log/info "shutting down channel")
-                          (close! receive-ch)))))
+                          (cleanup!)))))
                   (conn/handle-connection receive-ch send-ch))))
 
 (defroutes app

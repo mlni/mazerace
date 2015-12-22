@@ -252,15 +252,15 @@
 
 (defn page []
   [:div.container
-   [:h1 (if (:connecting @connection-state)
+   [:h1 (if (:result @game)
+          (:result @game)
+          (if (:maze @game)
+            "Race!"
+            "Waiting for an opponent..."))]
+   [:h5 (if (:connecting @connection-state)
           "Connecting..."
           (if (not (:connected @connection-state))
-            "Disconnected"
-            (if (:result @game)
-              (:result @game)
-              (if (:maze @game)
-                "Race!"
-                "Waiting for an opponent..."))))]
+            "Disconnected"))]
    (when (and (:connected @connection-state) (:maze @game))
      [render-maze-svg])])
 
