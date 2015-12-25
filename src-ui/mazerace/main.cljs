@@ -108,6 +108,19 @@
             (.preventDefault e)
             (attempt-move! dir)))))
 
+(defn resize-window []
+  (let [h (aget js/window "innerHeight")
+        w (aget js/window "innerWidth")
+        container (aget (.getElementsByClassName js/document "container") 0)]
+    (log (str "on-resize " h " " w " " container (str (min w h) "px")))
+    (set! (.-width (.-style container)) (str (min w h) "px"))))
+
+(let [timeout (atom nil)]
+  (.addEventListener js/window "resize"
+                     (fn [_]
+                       (when @timeout (js/clearTimeout @timeout))
+                       (reset! timeout (js/setTimeout resize-window 100)))))
+
 (defn- render-cell [game cell]
   (let [symbols [[:position "O"]
                  [:opponent-position "X"]
@@ -266,4 +279,4 @@
      [render-maze-svg])])
 
 (r/render [page]
-          (js/document.getElementById "app"))
+          (.getElementById js/document "app"))
