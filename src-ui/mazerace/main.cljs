@@ -102,8 +102,9 @@
                                          39 :right
                                          68 :right          ; d
                                          76 :right          ; l
-                                         :none)]
-          (when (not= dir :none)
+                                         :none)
+              modifiers (or (.-altKey e) (.-ctrlKey e) (.-metaKey e) (.-shiftKey e))]
+          (when (and (not modifiers) (not= dir :none) )
             (.preventDefault e)
             (attempt-move! dir)))))
 
