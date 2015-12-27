@@ -20,16 +20,12 @@
 (defn find-shortest-path [maze from to]
   (log/debug "find-path" from to)
   (letfn [(step [paths visited]
-            (loop [result nil paths paths]
-              (if (empty? paths)
-                [result (into visited (map last result))]
-                (let [path (first paths)]
-                  (recur (concat result (for [exit (exits maze (last path))
-                                              :when (not (contains? visited exit))]
-                                          (conj path exit)))
-                         (rest paths))))))
-          (finished? [path]
-            (= (last path) to))]
+            (mapcat (fn [path]
+                      (for [exit (exits maze (last path))
+                            :when (not (contains? visited exit))]
+                        (conj path exit)))
+                    paths))
+          (finished? [path] (= (last path) to))]
     (let [paths [[from]]
           visited (hash-set from)]
       (loop [paths paths visited visited]
@@ -38,8 +34,8 @@
           (let [finished (filter finished? paths)]
             (if (seq finished)
               (first finished)
-              (let [[paths visited] (step paths visited)]
-                (recur paths visited)))))))))
+              (let [paths (step paths visited)]
+                (recur paths (into visited (map last paths)))))))))))
 
 (defn start-solver-loop [game send-ch]
   (go
