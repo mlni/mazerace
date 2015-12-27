@@ -26,21 +26,21 @@
 
 (defn- generate-maze [width height start]
   (let [walls (into [] (for [y (range height)]
-                           (into [] (for [x (range width)]
-                                      {:u true :d true :l true :r true}))))
-          visited (hash-set)
-          path (list start)]
-      (loop [path path visited visited walls walls]
-        (if (empty? path)
-          walls
-          (let [current-cell (first path)
-                unvisited-neighbors (unvisited walls visited current-cell)]
-            (if (empty? unvisited-neighbors)
-              (recur (rest path) (conj visited current-cell) walls)
-              (let [neighbor (rand-nth unvisited-neighbors)]
-                (recur (conj path neighbor)
-                       (conj visited current-cell)
-                       (connect walls current-cell neighbor)))))))))
+                         (into [] (for [x (range width)]
+                                    {:u true :d true :l true :r true}))))
+        visited (hash-set)
+        path (list start)]
+    (loop [path path visited visited walls walls]
+      (if (empty? path)
+        walls
+        (let [current-cell (first path)
+              unvisited-neighbors (unvisited walls visited current-cell)]
+          (if (empty? unvisited-neighbors)
+            (recur (rest path) (conj visited current-cell) walls)
+            (let [neighbor (rand-nth unvisited-neighbors)]
+              (recur (conj path neighbor)
+                     (conj visited current-cell)
+                     (connect walls current-cell neighbor)))))))))
 
 (defn- compact
   "Represent each cell in the maze as an integer, where lower 4 bits represent
@@ -52,8 +52,9 @@
                     (bit-shift-left (bit (:r cell)) 1)
                     (bit-shift-left (bit (:d cell)) 2)
                     (bit-shift-left (bit (:l cell)) 3)))]
-    (map (fn [row]
-           (map encode row)) maze)))
+    (into []
+          (map (fn [row]
+                 (into [] (map encode row))) maze))))
 
 (defn generate [width height target-position]
   (let [maze (generate-maze width height target-position)]
