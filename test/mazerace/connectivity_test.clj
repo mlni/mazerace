@@ -23,12 +23,17 @@
     (let [conn-ch (chan)
           [recv-a send-a] [(chan) (chan)]
           done-ch (chan)
-          game-fn (fn [& _] (close! done-ch))]
+          game-started (atom false)
+          game-fn (fn [& _] (close! done-ch) (reset! game-started true))]
       (con/connection-worker conn-ch game-fn)
       (go
         (>! conn-ch [recv-a send-a])
         (close! recv-a)
         (>! conn-ch [(chan) (chan)])
-        (>! conn-ch [(chan) (chan)]))
-      (is (nil? (<!! done-ch)))
+        (>! done-ch 1))
+      (<!! done-ch)
+      (is (false? @game-started))
+      (go (>! conn-ch [(chan) (chan)]))
+      (<!! done-ch)
+      (is (true? @game-started))
       (go (close! conn-ch)))))

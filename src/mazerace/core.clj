@@ -14,6 +14,7 @@
 (defroutes app
            (GET "/" [] (resp/redirect "index.html"))
            (GET "/ws" [] ws/socket-handler)
+           #_(GET "/ws/:level" [] ws/socket-handler)
            (resources "/" {:root "/public"})
            (not-found "Page not found"))
 
