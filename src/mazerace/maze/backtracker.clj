@@ -1,5 +1,5 @@
-(ns mazerace.maze
-  (:require [clojure.pprint :refer [pprint]]))
+(ns mazerace.maze.backtracker
+  (:require [mazerace.maze.core :as c]))
 
 (defn- unvisited [maze visited [x y]]
   (let [deltas [[-1 0] [1 0] [0 -1] [0 1]]]
@@ -42,31 +42,16 @@
                      (conj visited current-cell)
                      (connect walls current-cell neighbor)))))))))
 
-(defn- compact
-  "Represent each cell in the maze as an integer, where lower 4 bits represent
-  presence of walls respectively on top, right, bottom and left side."
-  [maze]
-  (letfn [(bit [x] (if x 1 0))
-          (encode [cell]
-            (bit-or (bit-shift-left (bit (:u cell)) 0)
-                    (bit-shift-left (bit (:r cell)) 1)
-                    (bit-shift-left (bit (:d cell)) 2)
-                    (bit-shift-left (bit (:l cell)) 3)))]
-    (into []
-          (map (fn [row]
-                 (into [] (map encode row))) maze))))
+(defn- connect-random-cells [maze]
+  (let [x (inc (rand-int (dec (count (first maze)))))
+        y (inc (rand-int (dec (count maze))))
+        dir (rand-nth [:l :u])
+        [dx dy] (get {:l [-1 0] :u [0 -1]} dir)
+        [x2 y2] [(+ x dx) (+ y dy)]]
+    (connect maze [x y] [x2 y2])))
 
 (defn generate [width height target-position]
-  (let [maze (generate-maze width height target-position)]
-    ; remove a couple of walls to make it easier?
-    (compact maze)))
-
-(defn visualize [walls]
-  (doseq [row walls]
-    (println (apply str (map (fn [cell]
-                               (str "+" (if (:u cell) "-" " ") "+")) row)))
-    (println (apply str (map (fn [cell]
-                               (str (if (:l cell) "|" " ") " " (if (:r cell) "|" " "))) row)))
-    (println (apply str (map (fn [cell]
-                               (str "+" (if (:d cell) "-" " ") "+")) row)))))
-
+  (let [maze (generate-maze width height target-position)
+        maze (nth (iterate connect-random-cells maze)
+                  (quot (* width height) 10))]
+    (c/compact maze)))

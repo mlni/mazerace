@@ -1,8 +1,8 @@
 (ns mazerace.game
   (:require [clojure.tools.logging :as log]
             [clojure.core.async :refer [>! <! >!! <!! go chan close! thread alts! alts!! timeout go-loop]]
-            [mazerace.maze :as maze]
-            [mazerace.maze :as maze]))
+            [mazerace.maze.backtracker :as maze1]
+            [mazerace.maze.kruskal :as maze2]))
 
 
 (defn- the-other [player]
@@ -148,7 +148,7 @@
                             #(place-randomly [width height] [p1-position p2-position target-position]))
         throwers (repeatedly num-of-throwers
                              #(place-randomly [width height] (concat jumpers [p1-position p2-position target-position])))
-        maze (maze/generate width height target-position)]
+        maze (maze2/generate width height target-position)]
     {:maze     maze
      :p1       {:position p1-position}
      :p2       {:position p2-position}
