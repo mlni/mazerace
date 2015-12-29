@@ -121,6 +121,8 @@
                        (when @timeout (js/clearTimeout @timeout))
                        (reset! timeout (js/setTimeout resize-window 100)))))
 
+(js/setTimeout resize-window 100)                           ; run once on startup
+
 (defn- render-cell [game cell]
   (let [symbols [[:position "O"]
                  [:opponent-position "X"]
