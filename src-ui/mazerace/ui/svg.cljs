@@ -1,5 +1,4 @@
-(ns mazerace.ui.svg
-  (:require [mazerace.game :as game]))
+(ns mazerace.ui.svg)
 
 (defn- render-mouse [x y direction size color]
   (let [rotate (get {:left 90 :up 180 :right 270 :down 0} direction 0)]
@@ -84,9 +83,8 @@
              :x2 (* cellnum size)
              :y2 (* (inc rownum) size)}])])
 
-(defn- render-maze []
-  (let [game (game/game-state)
-        maze (:maze game)
+(defn- render-maze [game]
+  (let [maze (:maze game)
         width (count (first maze))
         height (count maze)
         size 10]

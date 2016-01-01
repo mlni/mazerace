@@ -3,18 +3,47 @@
             [mazerace.ui.svg :as svg]
             [mazerace.socket :as ws]))
 
-(defn index []
-  (let [game (game/game-state)
-        connection-state (ws/state)]
+(defn index-page []
+  [:div
+   [:h1 "Mazerace"]
+   [:button {:on-click #(game/start-game!)}
+    "Play!"]])
+
+(defn- overlay [& content]
+  [:div
+   [:div.overlay-background]
+   [:div.overlay-message
+    content]])
+
+(defn result [result]
+  (overlay
+    [:div (condp = result
+            "win" "You win!"
+            "lose" "Opponent won!"
+            "opponent-disconnected" "Opponent disconnected"
+            "Game over!")]
+    [:div [:button {:on-click #(game/start-game!)} "Play again!"]]))
+
+(defn connection-lost []
+  (overlay "Opponent disconnected"))
+
+(defn play [game]
+  (let [connection-state (ws/state)]
+    [:div.game
+     (if (:result game)
+       [result (:result game)]
+       (if (not (:connected connection-state))
+         [connection-lost]))
+     (when (:maze game)
+       [svg/render-maze game])]))
+
+(defn connecting []
+  ; TODO: handle "connecting" state
+  [:h1 "Waiting for an opponent"])
+
+(defn content []
+  (let [game (game/game-state)]
     [:div.container
-     [:h1 (if (:result game)
-            (:result game)
-            (if (:maze game)
-              "Race!"
-              "Waiting for an opponent..."))]
-     [:h5 (if (:connecting connection-state)
-            "Connecting..."
-            (if (not (:connected connection-state))
-              "Disconnected"))]
-     (when (and (:connected connection-state) (:maze game))
-       [svg/render-maze])]))
+     (condp = (:state game) :connecting [connecting]
+                            :playing [play game]
+                            [index-page])]))

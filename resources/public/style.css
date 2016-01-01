@@ -1,4 +1,4 @@
-.container {
+.game {
   width: 100%;
   height: 100%;
   text-align: center;
@@ -37,4 +37,25 @@
 .maze-svg {
   width: 95%;
   height: 95%;
+}
+
+.game .overlay-background {
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  background-color: white;
+  opacity: 0.8;
+}
+
+.game .overlay-message {
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  top: 45%;
+  left: 0px;
+  color: black;
+  text-align: center;
+  font-size: 30px;
 }

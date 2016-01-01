@@ -1,6 +1,10 @@
 (ns mazerace.game
+  (:require-macros [cljs.core.async.macros :refer (go go-loop)])
   (:require [reagent.core :as r]
-            [mazerace.log :as log]))
+            [mazerace.log :as log]
+            [mazerace.input :as input]
+            [mazerace.socket :as ws]
+            [cljs.core.async :refer (<! >! put! chan close!)]))
 
 (defonce game (r/atom nil))
 
@@ -37,7 +41,8 @@
                   :position          (:position data)
                   :opponent-position (:opponent-position data)
                   :jumpers           (:jumpers data)
-                  :throwers          (:throwers data)}))
+                  :throwers          (:throwers data)
+                  :state             :playing}))
   (when (:position data)
     (swap! game assoc :position (:position data)))
   (when (:opponent-position data)
@@ -50,7 +55,17 @@
   (when (:throwers data)
     (swap! game assoc :throwers (:throwers data)))
   (when (:result data)
-    (reset! game {:result (:result data)})))
+    (swap! game assoc :result (:result data))))
 
 (defn game-state []
   @game)
+
+(defn start-game! []
+  (let [[send-ch recv-ch] (ws/connect-socket "/ws")
+        send! (fn [msg] (go (>! send-ch msg)))]
+    (input/register-handler (fn [dir] (handle-move dir send!)))
+    (go (loop [_ nil]
+          (if-let [data (<! recv-ch)]
+            (recur (handle-server-message data))
+            (close! send-ch))))
+    (swap! game assoc :state :connecting)))

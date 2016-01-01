@@ -5,8 +5,9 @@
   (let [h (aget js/window "innerHeight")
         w (aget js/window "innerWidth")
         container (aget (.getElementsByClassName js/document "container") 0)]
-    (log/info (str "on-resize " h " " w " " container (str (min w h) "px")))
-    (set! (.-width (.-style container)) (str (min w h) "px"))))
+    (when container
+      (log/info (str "on-resize " h " " w " " container (str (min w h) "px")))
+      (set! (.-width (.-style container)) (str (min w h) "px")))))
 
 (defn handle-resize! []
   (let [timeout (atom nil)]
