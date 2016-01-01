@@ -35,6 +35,7 @@
                        keys)))))
 
 (defn- place-randomly [[width height] avoid-positions]
+  (log/debug "place-randomly" width height avoid-positions)
   (loop []
     (let [rand-x (rand-int width)
           rand-y (rand-int height)]
@@ -43,14 +44,15 @@
         [rand-x rand-y]))))
 
 (defn- place-player-randomly [game player]
-  (let [other-pos (get-in game [(the-other player) :position])
+  (let [pos (get-in game [player :position])
+        other-pos (get-in game [(the-other player) :position])
         target (get-in game [:target])
         avoid (concat (get-in game [:jumpers])
                       (get-in game [:throwers])
-                      [other-pos target])
+                      [pos other-pos target])
         width (count (first (get game :maze)))
         height (count (get-in game [:maze]))]
-    (place-randomly [width height] avoid)))
+    (assoc-in game [player :position] (place-randomly [width height] avoid))))
 
 (defn finished? [game]
   (or (get-in game [:p1 :result])
@@ -60,16 +62,16 @@
   (let [player-pos (get-in game [player :position])]
     (when (= player-pos (get-in game [(the-other player) :position]))
       (do
-        (log/info "Collision, randomizing positions")
+        (log/info "Collision, randomizing positions" game player)
         (-> game
-            (assoc-in [player :position] (place-player-randomly game player))
-            (assoc-in [(the-other player) :position] (place-player-randomly game (the-other player))))))))
+            (place-player-randomly player)
+            (place-player-randomly (the-other player)))))))
 
 (defn- handle-jumpers [game player]
   (let [player-pos (get-in game [player :position])]
     (when (some #(= player-pos %) (:jumpers game))
       (-> game
-          (assoc-in [player :position] (place-player-randomly game player))
+          (place-player-randomly player)
           (update :jumpers (without player-pos))))))
 
 (defn- handle-throwers [game player]
@@ -77,7 +79,7 @@
         opponent (the-other player)]
     (when (some #(= player-pos %) (:throwers game))
       (-> game
-          (assoc-in [opponent :position] (place-player-randomly game opponent))
+          (place-player-randomly opponent)
           (update :throwers (without player-pos))))))
 
 (defn- handle-finish [game player]
