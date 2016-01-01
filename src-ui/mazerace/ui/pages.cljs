@@ -44,7 +44,7 @@
       (when (:maze game)
         [svg/render-maze game])]]))
 
-(defn play-component [game]
+(defn play-component []
   (r/create-class
     {:component-did-mount window/on-resize-window
      :reagent-render      play}))
@@ -65,5 +65,5 @@
      [navbar]
      [:div.container
       (condp = (:state game) :connecting [connecting]
-                             :playing [play-component game]
+                             :playing [play-component]
                              [index-page])]]))

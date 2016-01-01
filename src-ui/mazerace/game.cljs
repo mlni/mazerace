@@ -34,28 +34,34 @@
       (swap! game assoc :direction dir)
       (send-fn! {:move [xx yy]}))))
 
+(defn- on-maze [game data]
+  (assoc game :maze (:maze data)
+              :state :playing))
+
+(defn- on-opponent-move [game data]
+  (-> game
+      (assoc :opponent-position (:opponent-position data))
+      (assoc :opponent-direction (direction (or (:opponent-position game) (:opponent-position data))
+                                            (:opponent-position data)))))
+
+(defn- update-field-fn [key]
+  (fn [game data]
+    (assoc game key (get data key))))
+
+(defn- update-game-state [game data]
+  (let [pipeline (merge
+                   (reduce (fn [r key] (assoc r key (update-field-fn key)))
+                           {} [:position :jumpers :throwers :result :target])
+                   {:maze              on-maze
+                    :opponent-position on-opponent-move})]
+    (reduce (fn [game [key handler-fn]]
+              (if (contains? data key)
+                (handler-fn game data)
+                game))
+            game pipeline)))
+
 (defn handle-server-message [data]
-  (when (:maze data)
-    (reset! game {:maze              (:maze data)
-                  :target            (:target data)
-                  :position          (:position data)
-                  :opponent-position (:opponent-position data)
-                  :jumpers           (:jumpers data)
-                  :throwers          (:throwers data)
-                  :state             :playing}))
-  (when (:position data)
-    (swap! game assoc :position (:position data)))
-  (when (:opponent-position data)
-    (swap! game assoc :opponent-direction
-           (direction (or (:opponent-position @game) (:opponent-position data))
-                      (:opponent-position data)))
-    (swap! game assoc :opponent-position (:opponent-position data)))
-  (when (:jumpers data)
-    (swap! game assoc :jumpers (:jumpers data)))
-  (when (:throwers data)
-    (swap! game assoc :throwers (:throwers data)))
-  (when (:result data)
-    (swap! game assoc :result (:result data))))
+  (swap! game update-game-state data))
 
 (defn game-state []
   @game)
