@@ -51,8 +51,9 @@
             (recur))
           (log/debug "Exiting solver loop"))))))
 
-(defn computer-player [[recv-ch send-ch]]
-  (let [game (atom {})]
+(defn computer-player []
+  (let [game (atom {})
+        [send-ch recv-ch] [(chan) (chan)]]
     (start-solver-loop game send-ch)
     (go
       (loop []
@@ -74,4 +75,5 @@
               (log/debug "Closing receive loop")
               (swap! game assoc :path nil)
               (close! recv-ch)
-              (close! send-ch))))))))
+              (close! send-ch))))))
+    [send-ch recv-ch]))
