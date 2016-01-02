@@ -3,14 +3,19 @@
             [mazerace.game :as game]
             [mazerace.ui.svg :as svg]
             [mazerace.socket :as ws]
-            [mazerace.window :as window]
-            [mazerace.log :as log]))
+            [mazerace.window :as window]))
+
+(defn- start-button []
+  [:button.btn.btn-default {:on-click #(game/dispatch :start-game)}
+   [:img {:src "/icons/play.svg"}]
+   "Start game!"])
 
 (defn index-page []
-  [:div
-   [:h1 "Mazerace"]
-   [:button {:on-click #(game/dispatch :start-game)}
-    "Play!"]])
+  [:div.masthead
+   [:img.sample {:src "/imgs/game.png"}]
+   [:div.slogan
+    "Help the mouse get to the cheese before the other player does"]
+   [start-button]])
 
 (defn- overlay [content]
   [:div
@@ -18,7 +23,7 @@
    [:div.overlay-message
     content]])
 
-(defn result [result]
+(defn game-result [result]
   (overlay
     [:div
      (condp = result
@@ -27,14 +32,13 @@
        "opponent-disconnected" "Opponent disconnected"
        "Game over!")
      [:div
-      [:button {:on-click #(game/dispatch :start-game)} "Play again!"]]]))
+      [start-button]]]))
 
 (defn connection-lost []
   (overlay
     [:div
      "Opponent disconnected"
-     [:div
-      [:button {:on-click #(game/dispatch :start-game)} "Play again!"]]]))
+     [:div [start-button]]]))
 
 (defn play []
   (let [game (game/game-state)
@@ -42,7 +46,7 @@
     [:div.game-wrapper
      [:div.game-container
       (if (:result game)
-        [result (:result game)]
+        [game-result (:result game)]
         (when-not (:connected connection-state)
           [connection-lost]))
       (when (:maze game)
@@ -58,17 +62,22 @@
     (if (:connecting connection-state)
       [:h1 "Connecting ..."]
       (if (not (:connected connection-state))
-        [:h1 "Err, connection lost. Bummer."]
-        [:div
-         [:h1 "Waiting for an opponent"]
-         [:button {:on-click #(game/dispatch :play-against-computer)}
+        [:h1 "Connection lost. Bummer."]
+        [:div.connecting
+         [:h1 "Waiting for an opponent ..."]
+         [:div "You can wait a bit for another player to play against or you can play against the computer. I don't mind either way."]
+         [:button.btn.btn-default {:on-click #(game/dispatch :play-against-computer)}
           "Play against computer"]]))))
 
 (defn navbar []
   [:nav {:class "navbar navbar-default navbar-fixed-top"}
    [:div.container
     [:div.navbar-header
-     [:a.navbar-brand "Mazerace"]]]])
+     [:a.navbar-brand "Mazerace"]]
+    [:div.nav
+     [:ul.nav.navbar-nav
+      [:li [:a {:href "#"} "Home"]]
+      [:li [:a {:href "#"} "About"]]]]]])
 
 (defn content []
   (let [game (game/game-state)]

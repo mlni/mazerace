@@ -1,6 +1,31 @@
 body {
   padding-top: 50px;
   padding-bottom: 20px;
+  color: #555;
+}
+
+.masthead {
+  padding: 80px 0;
+  text-align: center;
+}
+
+.masthead img.sample {
+  width: 220px;
+}
+
+.masthead .slogan {
+  width: 80%;
+  font-size: 30px;
+  margin: 20px auto 30px auto;
+}
+
+.masthead button {
+  font-size: 20px;
+}
+
+.masthead button img {
+  width: 20px;
+  padding: 0 2px 3px 0;
 }
 
 .game-wrapper {
@@ -9,8 +34,23 @@ body {
   text-align: center;
 }
 
+.connecting {
+  width: 80%;
+  margin: 20px auto 30px auto;
+}
+
+.connecting button {
+  float: right;
+  margin-top: 15px;
+}
+
 .game-container {
   display: inline-block;
+}
+
+.game-container button img {
+  width: 20px;
+  padding: 0 2px 3px 0;
 }
 
 .game-container .overlay-background {
