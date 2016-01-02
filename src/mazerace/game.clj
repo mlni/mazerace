@@ -141,10 +141,10 @@
           (disconnect!))))))
 
 (defn- make-game []
-  (let [width 6
-        height 6
-        num-of-jumpers 1
-        num-of-throwers 1
+  (let [width 25
+        height 25
+        num-of-jumpers 2
+        num-of-throwers 2
         target-position [(quot width 2) (dec height)]
         p1-position [0 0]
         p2-position [(dec width) 0]
