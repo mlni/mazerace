@@ -24,7 +24,9 @@
   (fn [vals]
     (remove #(= val %) vals)))
 
-(defn- find-differences [a b]
+(defn- find-differences
+  "Shallow compare between two maps. Returns the differences as a map."
+  [a b]
   (let [keys (apply sorted-set (concat (keys a) (keys b)))]
     (reduce (fn [r [k v]] (assoc r k v))
             nil
@@ -150,7 +152,7 @@
                             #(place-randomly [width height] [p1-position p2-position target-position]))
         throwers (repeatedly num-of-throwers
                              #(place-randomly [width height] (concat jumpers [p1-position p2-position target-position])))
-        maze (maze2/generate width height target-position)]
+        maze (maze2/generate width height)]
     {:maze     maze
      :p1       {:position p1-position}
      :p2       {:position p2-position}
