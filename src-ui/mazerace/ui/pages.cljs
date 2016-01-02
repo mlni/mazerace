@@ -50,8 +50,15 @@
      :reagent-render      play}))
 
 (defn connecting []
-  ; TODO: handle "connecting" state
-  [:h1 "Waiting for an opponent"])
+  (let [connection-state (ws/state)]
+    (if (:connecting connection-state)
+      [:h1 "Connecting ..."]
+      (if (not (:connected connection-state))
+        [:h1 "Err, connection lost. Bummer."]
+        [:div
+         [:h1 "Waiting for an opponent"]
+         [:button {:on-click #(game/play-against-computer!)}
+          "Play against computer"]]))))
 
 (defn navbar []
   [:nav {:class "navbar navbar-default navbar-fixed-top"}

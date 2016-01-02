@@ -74,4 +74,11 @@
           (if-let [data (<! recv-ch)]
             (recur (handle-server-message data))
             (close! send-ch))))
-    (swap! game assoc :state :connecting)))
+    (swap! game assoc
+           :state :connecting
+           :send-fn send!)))
+
+(defn play-against-computer! []
+  (let [send-fn! (:send-fn @game)]
+    (when (= :connecting (:state @game))
+      (send-fn! {:opponent "computer"}))))
