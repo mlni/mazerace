@@ -9,7 +9,7 @@
 (defn index-page []
   [:div
    [:h1 "Mazerace"]
-   [:button {:on-click #(game/start-game!)}
+   [:button {:on-click #(game/dispatch :start-game)}
     "Play!"]])
 
 (defn- overlay [content]
@@ -27,10 +27,14 @@
        "opponent-disconnected" "Opponent disconnected"
        "Game over!")
      [:div
-      [:button {:on-click #(game/start-game!)} "Play again!"]]]))
+      [:button {:on-click #(game/dispatch :start-game)} "Play again!"]]]))
 
 (defn connection-lost []
-  (overlay [:div "Opponent disconnected"]))
+  (overlay
+    [:div
+     "Opponent disconnected"
+     [:div
+      [:button {:on-click #(game/dispatch :start-game)} "Play again!"]]]))
 
 (defn play []
   (let [game (game/game-state)
@@ -39,7 +43,7 @@
      [:div.game-container
       (if (:result game)
         [result (:result game)]
-        (if (not (:connected connection-state))
+        (when-not (:connected connection-state)
           [connection-lost]))
       (when (:maze game)
         [svg/render-maze game])]]))
@@ -57,7 +61,7 @@
         [:h1 "Err, connection lost. Bummer."]
         [:div
          [:h1 "Waiting for an opponent"]
-         [:button {:on-click #(game/play-against-computer!)}
+         [:button {:on-click #(game/dispatch :play-against-computer)}
           "Play against computer"]]))))
 
 (defn navbar []

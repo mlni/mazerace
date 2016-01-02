@@ -8,6 +8,8 @@
 
 (defonce game (r/atom nil))
 
+(declare dispatch)
+
 (defn- direction [[ox oy] [nx ny]]
   (cond (< ox nx) :right
         (> ox nx) :left
@@ -21,18 +23,19 @@
   (let [bit (bit-shift-left 1 (get {:up 0 :right 1 :down 2 :left 3} dir))]
     (not (zero? (bit-and cell bit)))))
 
-(defn handle-move [dir send-fn!]
-  (let [[x y] (:position @game)
-        maze (:maze @game)
+(defn handle-move [game [dir]]
+  (let [[x y] (:position game)
+        maze (:maze game)
         [dx dy] (get {:up [0 -1] :down [0 1] :left [-1 0] :right [1 0]} dir)
         xx (+ x dx)
         yy (+ y dy)]
     (when (and (within-boundary maze xx yy)
                (not (has-wall? (get-in maze [y x]) dir)))
       (log/info (str "moving to " xx " " yy))
-      (swap! game assoc :position [xx yy])
-      (swap! game assoc :direction dir)
-      (send-fn! {:move [xx yy]}))))
+      [(-> game
+           (assoc :position [xx yy])
+           (assoc :direction dir))
+       {:move [xx yy]}])))
 
 (defn- on-maze [game data]
   (assoc game :maze (:maze data)
@@ -48,37 +51,51 @@
   (fn [game data]
     (assoc game key (get data key))))
 
-(defn- update-game-state [game data]
+(defn handle-server-message [game [data]]
   (let [pipeline (merge
                    (reduce (fn [r key] (assoc r key (update-field-fn key)))
                            {} [:position :jumpers :throwers :result :target])
                    {:maze              on-maze
-                    :opponent-position on-opponent-move})]
-    (reduce (fn [game [key handler-fn]]
-              (if (contains? data key)
-                (handler-fn game data)
-                game))
-            game pipeline)))
+                    :opponent-position on-opponent-move})
+        game (reduce (fn [game [key handler-fn]]
+                       (if (contains? data key)
+                         (handler-fn game data)
+                         game))
+                     game pipeline)]
+    [game]))
 
-(defn handle-server-message [data]
-  (swap! game update-game-state data))
+
+(defn handle-start-game [game]
+  (let [[send-ch recv-ch] (ws/connect-socket "/ws")
+        send! (fn [msg] (go (>! send-ch msg)))]
+    (input/register-handler (fn [dir] (dispatch :move dir)))
+    (go (loop [_ nil]
+          (if-let [data (<! recv-ch)]
+            (recur (dispatch :server-event data))
+            (close! send-ch))))
+    [(assoc game
+       :state :connecting
+       :send-fn send!)]))
+
+(defn handle-play-against-computer [game]
+  (when (= :connecting (:state game))
+    [game {:opponent "computer"}]))
+
+
+(def event-handlers
+  {:start-game            handle-start-game
+   :play-against-computer handle-play-against-computer
+   :move                  handle-move
+   :server-event          handle-server-message})
+
+(defn dispatch [event-name & args]
+  (if-let [handler (get event-handlers event-name)]
+    (let [[state message] (handler @game args)]
+      (when state
+        (reset! game state))
+      (when (and message (:send-fn state))
+        ((:send-fn state) message)))
+    (log/info "Unknown event in dispatch" event-name)))
 
 (defn game-state []
   @game)
-
-(defn start-game! []
-  (let [[send-ch recv-ch] (ws/connect-socket "/ws")
-        send! (fn [msg] (go (>! send-ch msg)))]
-    (input/register-handler (fn [dir] (handle-move dir send!)))
-    (go (loop [_ nil]
-          (if-let [data (<! recv-ch)]
-            (recur (handle-server-message data))
-            (close! send-ch))))
-    (swap! game assoc
-           :state :connecting
-           :send-fn send!)))
-
-(defn play-against-computer! []
-  (let [send-fn! (:send-fn @game)]
-    (when (= :connecting (:state @game))
-      (send-fn! {:opponent "computer"}))))
