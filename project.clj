@@ -10,6 +10,7 @@
                  [http-kit "2.1.19"]
                  [reagent "0.5.1" :exclusions [cljsjs/react]]
                  [cljsjs/react-with-addons "0.13.3-0"]
+                 [secretary "1.2.3"]
                  [org.clojure/tools.logging "0.2.6"]
                  [log4j/log4j "1.2.17"]]
   :min-lein-version "2.0.0"

@@ -1,27 +1,32 @@
 (ns mazerace.ui.pages
   (:require [reagent.core :as r]
             [mazerace.game :as game]
+            [mazerace.nav :as n]
             [mazerace.ui.svg :as svg]
             [mazerace.socket :as ws]
-            [mazerace.window :as window]))
+            [mazerace.window :as window]
+            [mazerace.game :as g]))
 
-(defn- start-button []
-  [:button.btn.btn-success {:on-click #(game/dispatch :start-game)}
-   [:img {:src "/icons/play.svg"}]
-   "Start game!"])
 
 (defn index-page []
   [:div.masthead
    [:img.sample {:src "/imgs/game.png"}]
    [:div.slogan
     "Help your mouse get to the cheese before the other player does"]
-   [start-button]])
+   [:button.btn.btn-success {:on-click #(n/nav! "/play")}
+    [:img {:src "/icons/play.svg"}]
+    "Start game!"]])
 
 (defn- overlay [content]
   [:div
    [:div.overlay-background]
    [:div.overlay-message
     content]])
+
+(defn- restart-button []
+  [:button.btn.btn-success {:on-click #(g/dispatch :start-game)}
+   [:img {:src "/icons/play.svg"}]
+   "Start game!"])
 
 (defn game-result [result]
   (overlay
@@ -32,13 +37,13 @@
        "opponent-disconnected" "Opponent disconnected"
        "Game over!")
      [:div
-      [start-button]]]))
+      [restart-button]]]))
 
 (defn connection-lost []
   (overlay
     [:div
      "Opponent disconnected"
-     [:div [start-button]]]))
+     [:div [restart-button]]]))
 
 (defn play []
   (let [game (game/game-state)
@@ -69,6 +74,9 @@
          [:button.btn.btn-default {:on-click #(game/dispatch :play-against-computer)}
           "Play against computer"]]))))
 
+(defn about []
+  [:h1 "About"])
+
 (defn navbar []
   [:nav {:class "navbar navbar-default navbar-fixed-top"}
    [:div.container
@@ -76,8 +84,8 @@
      [:a.navbar-brand "Mazerace"]]
     [:div.nav
      [:ul.nav.navbar-nav
-      [:li [:a {:href "#"} "Home"]]
-      [:li [:a {:href "#"} "About"]]]]]])
+      [:li [:a {:href "#/"} "Home"]]
+      [:li [:a {:href "#/about"} "About"]]]]]])
 
 (defn content []
   (let [game (game/game-state)]
@@ -86,4 +94,5 @@
      [:div.container
       (condp = (:state game) :connecting [connecting]
                              :playing [play-component]
+                             :about [about]
                              [index-page])]]))

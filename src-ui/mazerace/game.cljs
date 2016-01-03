@@ -39,7 +39,11 @@
 
 (defn- on-maze [game data]
   (assoc game :maze (:maze data)
-              :state :playing))
+              :state :playing
+              :position nil
+              :opponent-position nil
+              :direction :down
+              :opponent-direction :down))
 
 (defn- on-opponent-move [game data]
   (-> game
@@ -52,11 +56,10 @@
     (assoc game key (get data key))))
 
 (defn handle-server-message [game [data]]
-  (let [pipeline (merge
-                   (reduce (fn [r key] (assoc r key (update-field-fn key)))
-                           {} [:position :jumpers :throwers :result :target])
-                   {:maze              on-maze
-                    :opponent-position on-opponent-move})
+  (let [pipeline (concat [[:maze on-maze]
+                          [:opponent-position on-opponent-move]]
+                         (map (fn [key] [key (update-field-fn key)])
+                              [:position :jumpers :throwers :result :target]))
         game (reduce (fn [game [key handler-fn]]
                        (if (contains? data key)
                          (handler-fn game data)
@@ -81,14 +84,23 @@
   (when (= :connecting (:state game))
     [game {:opponent "computer"}]))
 
+(defn handle-navigation [game [page]]
+  (log/info "handle-navigation" page)
+  (if (= :connecting page)
+    (do
+      (dispatch :start-game)
+      nil)
+    [(assoc game :state page)]))
 
 (def event-handlers
   {:start-game            handle-start-game
    :play-against-computer handle-play-against-computer
    :move                  handle-move
-   :server-event          handle-server-message})
+   :server-event          handle-server-message
+   :navigate              handle-navigation})
 
 (defn dispatch [event-name & args]
+  (log/info "dispatch" event-name args)
   (if-let [handler (get event-handlers event-name)]
     (let [[state message] (handler @game args)]
       (when state
