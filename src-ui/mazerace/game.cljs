@@ -70,7 +70,8 @@
 
 (defn handle-start-game [game]
   (let [[send-ch recv-ch] (ws/connect-socket "/ws")
-        send! (fn [msg] (go (>! send-ch msg)))]
+        send! (fn [msg] (go (>! send-ch msg)))
+        stop! (fn [] (close! send-ch))]
     (input/register-handler (fn [dir] (dispatch :move dir)))
     (go (loop [_ nil]
           (if-let [data (<! recv-ch)]
@@ -78,18 +79,19 @@
             (close! send-ch))))
     [(assoc game
        :state :connecting
-       :send-fn send!)]))
+       :send-fn send!
+       :stop-fn stop!)]))
 
 (defn handle-play-against-computer [game]
   (when (= :connecting (:state game))
     [game {:opponent "computer"}]))
 
 (defn handle-navigation [game [page]]
-  (log/info "handle-navigation" page)
-  (if (= :connecting page)
-    (do
-      (dispatch :start-game)
-      nil)
+  (when-let [stop! (:stop-fn game)]
+    (stop!))                                                ; hang up when navigating away from /play
+
+  (if (= :play page)
+    (handle-start-game game)
     [(assoc game :state page)]))
 
 (def event-handlers
@@ -100,7 +102,6 @@
    :navigate              handle-navigation})
 
 (defn dispatch [event-name & args]
-  (log/info "dispatch" event-name args)
   (if-let [handler (get event-handlers event-name)]
     (let [[state message] (handler @game args)]
       (when state

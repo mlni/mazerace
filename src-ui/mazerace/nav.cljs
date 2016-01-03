@@ -13,7 +13,7 @@
 (defroute "/about" []
           (g/dispatch :navigate :about))
 (defroute "/play" []
-          (g/dispatch :navigate :connecting))
+          (g/dispatch :navigate :play))
 (defroute "*" []
           (g/dispatch :navigate :home))
 
