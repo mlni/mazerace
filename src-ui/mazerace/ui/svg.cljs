@@ -1,6 +1,10 @@
-(ns mazerace.ui.svg)
+(ns mazerace.ui.svg
+  (:require [mazerace.game :as game])
+  (:require-macros [reagent.ratom :refer [reaction]]))
 
-(defn- render-mouse [x y direction size color]
+(def size 10)
+
+(defn- render-mouse [x y direction color]
   (let [rotate (get {:left 90 :up 180 :right 270 :down 0} direction 0)]
     [:svg {:width   (dec size)
            :height  (dec size)
@@ -22,7 +26,7 @@
       [:circle {:cx 55 :cy 80 :r 2 :fill "black"}]
       [:path {:d "M50 19 C 46 15 54 5 50 1"}]]]))
 
-(defn- render-cheese [x y size]
+(defn- render-cheese [x y]
   [:svg {:width   (dec size)
          :height  (dec size)
          :x       (+ 0.5 (* x size))
@@ -43,7 +47,7 @@
     [:circle {:cx "55" :cy "75" :r "6"}]
     [:circle {:cx "80" :cy "60" :r "6"}]]])
 
-(defn- render-portal [x y size color]
+(defn- render-portal [x y color]
   [:g {:stroke "gray" :stroke-width "0" :fill "gray"}       ;shadow
    [:ellipse {:cx (+ (* x size) (quot size 2))
               :cy (+ (* y size) (quot size 2) +0.5)
@@ -83,36 +87,66 @@
              :x2 (* cellnum size)
              :y2 (* (inc rownum) size)}])])
 
-(defn- render-maze [game]
-  (let [maze (:maze game)
-        width (count (first maze))
-        height (count maze)
-        size 10]
-    [:svg {:className "maze-svg"
-           :viewBox   (str "-1 -1 " (+ 2 (* width size)) " " (+ 2 (* height size)))}
-     [:g {:stroke "black" :stroke-width "1" :fill "white" :stroke-linecap "round"}
-      (doall
-        (for [rownum (range height)
-              :let [row (nth maze rownum)]
-              cellnum (range width)
-              :let [cell (nth row cellnum)]]
-          (render-cell cell rownum cellnum size)))]
-     [:g
-      (doall
-        (for [[x y] (:jumpers game)]
-          ^{:key (str "jmp" x "-" y)}
-          [render-portal x y size "white"]))]
-     [:g
-      (doall
-        (for [[x y] (:throwers game)]
-          ^{:key (str "thr" x "-" y)}
-          [render-portal x y size "black"]))]
-     [:g
-      (let [[x y] (:target game)]
-        [render-cheese x y size])]
-     [:g
-      (let [[x y] (:opponent-position game)]
-        [render-mouse x y (:opponent-direction game) size "gray"])]
-     [:g {:stroke "black" :stroke-width "1" :fill "white"}
-      (let [[x y] (:position game)]
-        [render-mouse x y (:direction game) size "white"])]]))
+(defn- render-maze []
+  (let [maze (reaction (:maze (game/game-state)))]
+    (fn []
+      (let [width (count (first @maze))
+            height (count @maze)]
+        [:g {:stroke "black" :stroke-width "1" :fill "white" :stroke-linecap "round"}
+         (doall
+           (for [rownum (range height)
+                 :let [row (nth @maze rownum)]
+                 cellnum (range width)
+                 :let [cell (nth row cellnum)]]
+             (render-cell cell rownum cellnum size)))]))))
+
+(defn render-jumpers []
+  (let [jumpers (reaction (:jumpers (game/game-state)))]
+    (fn []
+      [:g (doall
+            (for [[x y] @jumpers]
+              ^{:key (str "jmp" x "-" y)}
+              [render-portal x y "white"]))])))
+
+(defn render-throwers []
+  (let [throwers (reaction (:throwers (game/game-state)))]
+    (fn []
+      [:g (doall
+            (for [[x y] @throwers]
+              ^{:key (str "thr" x "-" y)}
+              [render-portal x y "black"]))])))
+
+(defn render-target []
+  (let [target (reaction (:target (game/game-state)))]
+    (fn []
+      [:g (let [[x y] @target]
+            [render-cheese x y])])))
+
+(defn render-opponent []
+  (let [position (reaction (:opponent-position (game/game-state)))
+        direction (reaction (:opponent-direction (game/game-state)))]
+    (fn []
+      [:g (let [[x y] @position]
+            [render-mouse x y @direction "gray"])])))
+
+(defn render-player []
+  (let [position (reaction (:position (game/game-state)))
+        direction (reaction (:direction (game/game-state)))]
+    (fn []
+      [:g {:stroke "black" :stroke-width "1" :fill "white"}
+       (let [[x y] @position]
+         [render-mouse x y @direction "white"])])))
+
+(defn render-game []
+  (let [maze (reaction (:maze (game/game-state)))]
+    (fn []
+      (let [width (count (first @maze))
+            height (count @maze)]
+        [:svg {:className "maze-svg"
+               :viewBox   (str "-1 -1 " (+ 2 (* width size)) " " (+ 2 (* height size)))}
+         [render-maze]
+         [render-jumpers]
+         [render-throwers]
+         [render-target]
+         [render-opponent]
+         [render-player]]))))

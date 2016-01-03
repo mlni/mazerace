@@ -50,7 +50,7 @@
         (when-not (:connected connection-state)
           [connection-lost]))
       (when (:maze game)
-        [svg/render-maze game])]]))
+        [svg/render-game])]]))
 
 (defn play-component []
   (r/create-class
