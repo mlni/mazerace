@@ -15,12 +15,16 @@ body {
 
 .masthead .slogan {
   width: 80%;
-  font-size: 30px;
+  font-size: 25px;
   margin: 20px auto 30px auto;
 }
 
 .masthead button {
   font-size: 20px;
+}
+
+.masthead button img {
+  stroke-color: white;
 }
 
 .masthead button img {

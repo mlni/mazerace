@@ -6,7 +6,7 @@
             [mazerace.window :as window]))
 
 (defn- start-button []
-  [:button.btn.btn-default {:on-click #(game/dispatch :start-game)}
+  [:button.btn.btn-success {:on-click #(game/dispatch :start-game)}
    [:img {:src "/icons/play.svg"}]
    "Start game!"])
 
@@ -14,7 +14,7 @@
   [:div.masthead
    [:img.sample {:src "/imgs/game.png"}]
    [:div.slogan
-    "Help the mouse get to the cheese before the other player does"]
+    "Help your mouse get to the cheese before the other player does"]
    [start-button]])
 
 (defn- overlay [content]
@@ -27,7 +27,7 @@
   (overlay
     [:div
      (condp = result
-       "win" "You win!"
+       "win" "You won!"
        "lose" "Opponent won!"
        "opponent-disconnected" "Opponent disconnected"
        "Game over!")
