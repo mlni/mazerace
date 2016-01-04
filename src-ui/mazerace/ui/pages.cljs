@@ -81,11 +81,7 @@
   [:nav {:class "navbar navbar-default navbar-fixed-top"}
    [:div.container
     [:div.navbar-header
-     [:a.navbar-brand "Mazerace"]]
-    [:div.nav
-     [:ul.nav.navbar-nav
-      [:li [:a {:href "#/"} "Home"]]
-      [:li [:a {:href "#/about"} "About"]]]]]])
+     [:a.navbar-brand {:href "#/"} "Mazerace"]]]])
 
 (defn content []
   (let [game (game/game-state)]
