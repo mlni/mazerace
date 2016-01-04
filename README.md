@@ -2,7 +2,7 @@
 
 A two-player in-browser maze game implemented in Clojure/ClojureScript. You can try out the game [here](https://mazerace.herokuapp.com).
 
-The game itself is a remake of a Windows game from nineties that somehow ended up on my harddisk. If you happen to know the original author of the game be sure to let me know so I can credit the author.
+The game itself is a remake of a Windows game from the nineties that somehow ended up on my harddisk and has since been long lost. If you happen to know the original author of the game be sure to let me know so I can credit the author.
 
 ## Screenshot
 ![image of game](resources/public/imgs/game.png)
