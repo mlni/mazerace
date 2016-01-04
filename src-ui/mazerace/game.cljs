@@ -30,7 +30,8 @@
         xx (+ x dx)
         yy (+ y dy)]
     (when (and (within-boundary maze xx yy)
-               (not (has-wall? (get-in maze [y x]) dir)))
+               (not (has-wall? (get-in maze [y x]) dir))
+               (not (:result game)))
       (log/info (str "moving to " xx " " yy))
       [(-> game
            (assoc :position [xx yy])
