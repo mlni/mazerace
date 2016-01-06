@@ -71,13 +71,19 @@
 
 (defn handle-start-game [game]
   (let [[send-ch recv-ch] (ws/connect-socket "/ws")
+        input-ch (input/input-channel)
         send! (fn [msg] (go (>! send-ch msg)))
         stop! (fn [] (close! send-ch))]
-    (input/register-handler (fn [dir] (dispatch :move dir)))
+    (go (loop []
+          (when-let [dir (<! input-ch)]
+            (dispatch :move dir)
+            (recur))))
     (go (loop [_ nil]
           (if-let [data (<! recv-ch)]
             (recur (dispatch :server-event data))
-            (close! send-ch))))
+            (do
+              (close! send-ch)
+              (close! input-ch)))))
     [(assoc game
        :state :connecting
        :send-fn send!
@@ -88,8 +94,8 @@
     [game {:opponent "computer"}]))
 
 (defn handle-navigation [game [page]]
-  (when-let [stop! (:stop-fn game)]
-    (stop!))                                                ; hang up when navigating away from /play
+  (when-let [stop-current-game! (:stop-fn game)]
+    (stop-current-game!))                                   ; hang up when navigating away from /play
 
   (if (= :play page)
     (handle-start-game game)

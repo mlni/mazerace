@@ -1,4 +1,5 @@
-(ns mazerace.input)
+(ns mazerace.input
+  (:require [cljs.core.async :refer (put! chan)]))
 
 (defn parse-direction [e]
   (condp = (.-keyCode e) 38 :up
@@ -15,11 +16,13 @@
                          76 :right                          ; l
                          :none))
 
-(defn register-handler [handler-fn]
-  (set! (.-onkeydown js/document)
-        (fn [e]
-          (let [dir (parse-direction e)
-                modifiers (or (.-altKey e) (.-ctrlKey e) (.-metaKey e) (.-shiftKey e))]
-            (when (and (not modifiers) (not= dir :none))
-              (.preventDefault e)
-              (handler-fn dir))))))
+(defn input-channel []
+  (let [ch (chan)]
+    (set! (.-onkeydown js/document)
+          (fn [e]
+            (let [dir (parse-direction e)
+                  modifiers (or (.-altKey e) (.-ctrlKey e) (.-metaKey e) (.-shiftKey e))]
+              (when (and (not modifiers) (not= dir :none))
+                (.preventDefault e)
+                (put! ch dir)))))
+    ch))
