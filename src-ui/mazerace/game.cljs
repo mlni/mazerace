@@ -10,6 +10,10 @@
 
 (declare dispatch)
 
+(defn track! [event]
+  (when-let [ga (aget js/window "ga")]
+    (ga "send" "pageview" event)))
+
 (defn- direction [[ox oy] [nx ny]]
   (cond (< ox nx) :right
         (> ox nx) :left
@@ -74,6 +78,7 @@
         input-ch (input/input-channel)
         send! (fn [msg] (go (>! send-ch msg)))
         stop! (fn [] (close! send-ch))]
+    (track! "play")
     (go (loop []
           (when-let [dir (<! input-ch)]
             (dispatch :move dir)
